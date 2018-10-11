@@ -3,4 +3,6 @@ services:
         webapp:
                 build: ./webapp/
         postgres:
-                image: "postgres" 
+                image: "postgres"
+        influxdb:
+                image: "influxdb" 
