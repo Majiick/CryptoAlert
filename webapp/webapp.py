@@ -1,3 +1,6 @@
 from flask import Flask
+app = Flask(__name__)
 
-print('Imported Flask.')
+@app.route('/')
+def index():
+    return 'Hello, World!'
