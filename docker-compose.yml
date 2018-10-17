@@ -1,8 +1,24 @@
 version: '3'
+
 services:
         webapp:
                 build: ./webapp/
+                volumes:
+                        - run-volume:/run
+                #ports:
+                #        - 4000:4000
         postgres:
                 image: "postgres"
         influxdb:
-                image: "influxdb" 
+                image: "influxdb"
+        nginx:
+                image: "nginx"
+                volumes:
+                        - ./webapp/nginx.conf:/etc/nginx/nginx.conf
+                        - run-volume:/run
+                ports:
+                        - 80:80
+                        - 443:443
+
+volumes:
+        run-volume:
