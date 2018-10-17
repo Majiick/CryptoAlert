@@ -5,6 +5,12 @@ services:
                 build: ./webapp/
                 volumes:
                         - run-volume:/run
+        collector-orchestrator:
+                build: ./collector_orchestrator/
+                ports:
+                        - "5557:5557"
+        collector:
+                build: ./collector/
         postgres:
                 image: "postgres"
         influxdb:

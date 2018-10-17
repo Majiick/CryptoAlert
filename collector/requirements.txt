@@ -1,0 +1,4 @@
+pyzmq
+pandas
+#influxdb
+git+git://github.com/influxdata/influxdb-python@master
