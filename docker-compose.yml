@@ -5,20 +5,27 @@ services:
                 build: ./webapp/
                 volumes:
                         - run-volume:/run
-                #ports:
-                #        - 4000:4000
         postgres:
                 image: "postgres"
         influxdb:
                 image: "influxdb"
+                ports:
+                        - "8086:8086"
+
         nginx:
                 image: "nginx"
                 volumes:
                         - ./webapp/nginx.conf:/etc/nginx/nginx.conf
                         - run-volume:/run
                 ports:
-                        - 80:80
-                        - 443:443
+                        - "80:80"
+                        - "443:443"
+        grafana:
+                image: "grafana/grafana"
+                volumes:
+                        - ./grafana/defaults.ini:/etc/grafana/grafana.ini
+                ports:
+                        - "3000:3000"
 
 volumes:
         run-volume:
