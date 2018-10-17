@@ -11,6 +11,8 @@ services:
                 image: "influxdb"
                 ports:
                         - "8086:8086"
+                volumes:
+                        - influx-data:/var/lib/influxdb
 
         nginx:
                 image: "nginx"
@@ -24,8 +26,11 @@ services:
                 image: "grafana/grafana"
                 volumes:
                         - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+                        - grafana-data:/var/lib/grafana
                 ports:
                         - "3000:3000"
 
 volumes:
-        run-volume:
+        run-volume:  # To share the gunicorn sock
+        grafana-data:  # To persist grafana db
+        influx-data:  # To persist influx db
