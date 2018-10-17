@@ -23,7 +23,7 @@ services:
         grafana:
                 image: "grafana/grafana"
                 volumes:
-                        - ./grafana/defaults.ini:/etc/grafana/grafana.ini
+                        - ./grafana/grafana.ini:/etc/grafana/grafana.ini
                 ports:
                         - "3000:3000"
 

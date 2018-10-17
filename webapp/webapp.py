@@ -38,6 +38,6 @@ def db_test():
     print("Read DataFrame")
     client.query("select * from demo")
 
-    print("Delete database: " + dbname)
-    client.drop_database(dbname)
+    # print("Delete database: " + dbname)
+    # client.drop_database(dbname)
     return 'WTF'
