@@ -13,9 +13,6 @@ class DataSource:
     def get_last_price(self):
         return self.data_api.get_last_price(self.pair, self.exchange)
 
-
-
-# All we need here is the data sources. We can build the pair and pairexchange sources deriving from datasources.
 btcusd_bitfinex_datasource = DataSource(Pair('btcusd'), Exchange('bitfinex'), cryptowatch.Cryptowatch)
 
 print(btcusd_bitfinex_datasource.get_last_price())
