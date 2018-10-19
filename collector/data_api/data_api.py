@@ -20,5 +20,5 @@ class Exchange:
 class DataAPI(ABC):
     @staticmethod
     @abstractmethod
-    def get_last_price(self, pair: Pair, exchange: Exchange) -> float:
+    def get_last_price(pair: Pair, exchange: Exchange) -> float:
         pass
