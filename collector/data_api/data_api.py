@@ -22,11 +22,25 @@ class DataSource:
     def get_last_price(self):
         return self.data_api.get_last_price(self.pair, self.exchange)
 
+    def get_ohlc(self, start_time: int, end_time: int, periods: List[int]):
+        return self.data_api.get_ohlc(self.pair, self.exchange, start_time, end_time, periods)
+
 
 class DataAPI(ABC):
     @staticmethod
     @abstractmethod
     def get_last_price(pair: Pair, exchange: Exchange) -> float:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_ohlc(pair: Pair, exchange: Exchange, start_time: int, end_time: int, periods: List[int]):
+        '''
+        :param start_time: UNIX timespamp, inclusive
+        :param end_time: UNIX timespamp, inclusive
+        :param periods: The type of periods to get in seconds. e.g. 60 = 1m
+        :return:
+        '''
         pass
 
     @staticmethod
