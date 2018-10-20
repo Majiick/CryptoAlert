@@ -10,6 +10,11 @@ class Cryptowatch(DataAPI):
         json_data = json.loads(r.content)
         return float(json_data['result']['price'])
 
+    '''
+    def get_trades...
+        # Only gets very recent trades it seems like. Like the since param doesn't even work.
+    '''
+
 
     @staticmethod
     def get_ohlc(pair: Pair, exchange: Exchange, start_time: int, end_time: int, periods: List[int]):
