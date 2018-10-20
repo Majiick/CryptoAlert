@@ -33,7 +33,7 @@ class Cryptowatch(DataAPI):
                 r = requests.get('https://api.cryptowat.ch/markets/{}/{}/ohlc'.format(exchange.name, pair.pair),
                                  params=params)
                 json_data = json.loads(r.content)
-                # print(json_data['allowance'])
+                print(json_data['allowance'])
 
                 if json_data['result'][str(cur_period)]:
                     print(len(json_data['result'][str(cur_period)]))
