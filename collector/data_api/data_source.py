@@ -10,7 +10,7 @@ from data_api import DataSource, Pair, Exchange
 import cryptowatch
 
 
-data_sources: Dict[str, Dict[str, List[DataSource]]] = dict()  # data_sources['btcusd'][''poloniex] = [DataSource1, DataSource2]
+data_sources: Dict[str, Dict[str, List[DataSource]]] = dict()  # data_sources['btcusd']['poloniex'] = [DataSource1, DataSource2]
 
 
 def add_data_source(data_source: DataSource):
@@ -23,5 +23,10 @@ def add_data_source(data_source: DataSource):
     data_sources[data_source.pair.pair][data_source.exchange.name].append(data_source)
 
 
-add_data_source(DataSource(Pair('btcusd'), Exchange('bitfinex'), cryptowatch.Cryptowatch))
-print(data_sources['btcusd']['bitfinex'][0].get_last_price())
+for data_source in cryptowatch.Cryptowatch.get_data_sources():
+    add_data_source(data_source)
+
+print(data_sources)
+
+# add_data_source(DataSource(Pair('btcusd'), Exchange('bitfinex'), cryptowatch.Cryptowatch))
+# print(data_sources['btcusd']['bitfinex'][0].get_last_price())
