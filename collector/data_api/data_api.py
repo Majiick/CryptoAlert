@@ -13,7 +13,7 @@ class Exchange:
 
 
 class DataSource:
-    def __init__(self, pair : Pair, exchange : Exchange, data_api: Type['DataAPI']):  # Type['DataAPI'] is a forward declaration
+    def __init__(self, pair: Pair, exchange: Exchange, data_api: Type['DataAPI']):  # Type['DataAPI'] is a forward declaration
         assert(issubclass(data_api, DataAPI))
         self.pair = pair
         self.exchange = exchange
@@ -48,3 +48,25 @@ class DataAPI(ABC):
     def get_data_sources() -> List[DataSource]:
         pass
 
+
+class ContinuousDataSource:
+    def __init__(self, pair: Pair, exchange: Exchange, data_api: Type['ContinuousDataAPI']):  # Type['ContinuousDataAPI'] is a forward declaration
+        assert(issubclass(data_api, ContinuousDataAPI))
+        self.pair = pair
+        self.exchange = exchange
+        self.data_api = data_api
+
+
+class ContinuousDataAPI(ABC):
+    @abstractmethod
+    def __init__(self, pairs: List[Pair]):
+        self.pairs = pairs
+
+    @abstractmethod
+    async def run(self):
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_all_pairs() -> List[Pair]:
+        pass

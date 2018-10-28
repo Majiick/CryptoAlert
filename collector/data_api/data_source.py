@@ -1,5 +1,6 @@
 from typing import List, Dict
-from data_api import DataSource, Pair, Exchange 
+from data_api import DataSource, Pair, Exchange
+from poloniex import PoloniexWebsocket
 
 # Example structure
 # pair btcusd:
@@ -27,4 +28,7 @@ for data_source in cryptowatch.Cryptowatch.get_data_sources():
     add_data_source(data_source)
 
 # add_data_source(DataSource(Pair('btcusd'), Exchange('bitfinex'), cryptowatch.Cryptowatch))
-print(data_sources['btcusd']['bitfinex'][0].get_ohlc(1540052198 - 2592000, 1540052198, [60, 180, 300, 900, 1800, 3600, 7200, 14400, 21600, 43200, 86400, 259200, 604800]))
+# print(data_sources['btcusd']['bitfinex'][0].get_ohlc(1540052198 - 2592000, 1540052198, [60, 180, 300, 900, 1800, 3600, 7200, 14400, 21600, 43200, 86400, 259200, 604800]))
+
+p = PoloniexWebsocket(PoloniexWebsocket.get_all_pairs())
+p.run_test()

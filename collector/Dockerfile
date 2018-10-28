@@ -1,9 +1,11 @@
 FROM python:3.7
-ADD . /code
-WORKDIR /code
-ADD . ../common/mypycheckandrun.sh
+COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 RUN pip install mypy
+
+COPY . /code
+WORKDIR /code
+COPY . ../common/mypycheckandrun.sh
 
 # RUN mypy --ignore-missing-imports collector.py
 # CMD ["python", "-u", "collector.py"]
