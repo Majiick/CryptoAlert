@@ -4,6 +4,8 @@ import requests
 import json
 import websockets
 import asyncio
+import time
+from influxdb import InfluxDBClient
 
 WEBSOCKET_PAIRS = {'BTC_BCN': 7, 'BTC_BTS': 14, 'BTC_BURST': 15, 'BTC_CLAM': 20,
                    'BTC_DGB': 25, 'BTC_DOGE': 27, 'BTC_DASH': 24, 'BTC_GAME': 38,
@@ -52,6 +54,50 @@ class PoloniexWebsocket(ContinuousDataAPI):
         asyncio.ensure_future(self.run_tickers())
         # asyncio.ensure_future(self.run_orders())
 
+
+    async def write_ticker(self, ticker_update):
+        """
+        :param ticker_update: Array of
+              [
+                <currency pair id>,
+                "<last trade price>",
+                "<lowest ask>",
+                "<highest bid>",
+                "<percent change in last 24 hours>",
+                "<base currency volume in last 24 hours>",
+                "<quote currency volume in last 24 hours>",
+                <is frozen>,
+                "<highest trade price in last 24 hours>",
+                "<lowest trade price in last 24 hours>"
+              ]
+        """
+        host = 'influxdb'
+        port = 8086
+        user = 'root'
+        password = 'root'
+        dbname = 'financial'
+        client = InfluxDBClient(host, port, user, password, dbname)
+        client.create_database('financial')
+
+        print(time.time_ns())
+        json_body = [
+            {
+                "measurement": "ticker",
+                "tags": {
+                    "exchange": "poloniex",
+                    "pair": WEBSOCKET_PAIRS_INVERTED[ticker_update[0]]
+                },
+                "time": time.time_ns(),
+                "fields": {
+                    "price": ticker_update[1],
+                }
+            }
+        ]
+
+        client.create_retention_policy('retention_policy', '3d', 3, default=True)
+        client.write_points(json_body)
+        print("Written point")
+
     async def run_tickers(self):
         websocket = await websockets.connect('wss://api2.poloniex.com')
         await websocket.send(json.dumps({'command': 'subscribe', 'channel': '1002'}))  # 1002 is Ticker channel
@@ -64,10 +110,7 @@ class PoloniexWebsocket(ContinuousDataAPI):
 
             if data[0] == 1002:  # 1002 is Ticker channel
                 currency_update = data[2]
-                print(currency_update)
-                if WEBSOCKET_PAIRS_INVERTED[int(currency_update[0])] == 'USDT_ETH':
-                    print('Pair update: {}'.format(WEBSOCKET_PAIRS_INVERTED[int(currency_update[0])]))
-                    print(data)
+                await self.write_ticker(currency_update)
 
     async def run_orders(self):
         websocket = await websockets.connect('wss://api2.poloniex.com')
@@ -76,7 +119,6 @@ class PoloniexWebsocket(ContinuousDataAPI):
         for pair in self.pairs:
             assert(pair.pair in WEBSOCKET_PAIRS)
             asyncio.ensure_future(websocket.send(json.dumps({'command': 'subscribe', 'channel': WEBSOCKET_PAIRS[pair.pair]})))
-
 
         while True:
             ack = await websocket.recv()  # Wait and discard acknowledgement
