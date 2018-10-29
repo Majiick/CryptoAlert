@@ -5,7 +5,6 @@ RUN pip install mypy
 
 COPY . /code
 WORKDIR /code
-COPY . ../common/mypycheckandrun.sh
 
 # RUN mypy --ignore-missing-imports collector.py
 # CMD ["python", "-u", "collector.py"]

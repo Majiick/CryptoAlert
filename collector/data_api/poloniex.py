@@ -6,6 +6,7 @@ import websockets
 import asyncio
 import time
 from influxdb import InfluxDBClient
+from influxdb_init import db_client
 
 WEBSOCKET_PAIRS = {'BTC_BCN': 7, 'BTC_BTS': 14, 'BTC_BURST': 15, 'BTC_CLAM': 20,
                    'BTC_DGB': 25, 'BTC_DOGE': 27, 'BTC_DASH': 24, 'BTC_GAME': 38,
@@ -140,7 +141,6 @@ class PoloniexWebsocket(ContinuousDataAPI):
     async def write_order_update(self, order_updates, pair_id: int):
         assert(pair_id in WEBSOCKET_PAIRS_INVERTED)
         """
-
         :param order_updates: An array of   [
                                              ["o", <1 for buy 0 for sell>, "<price>", "<size>"],
                                              ["o", <1 for buy 0 for sell>, "<price>", "<size>"],
