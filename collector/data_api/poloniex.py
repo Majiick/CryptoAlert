@@ -51,9 +51,8 @@ class PoloniexWebsocket(ContinuousDataAPI):
         return ret
 
     async def run(self):
-        asyncio.ensure_future(self.run_tickers())
-        # asyncio.ensure_future(self.run_orders())
-
+        # asyncio.ensure_future(self.run_tickers())
+        asyncio.ensure_future(self.run_orders())
 
     async def write_ticker(self, ticker_update):
         """
@@ -79,7 +78,6 @@ class PoloniexWebsocket(ContinuousDataAPI):
         client = InfluxDBClient(host, port, user, password, dbname)
         client.create_database('financial')
 
-        print(time.time_ns())
         json_body = [
             {
                 "measurement": "ticker",
@@ -96,7 +94,7 @@ class PoloniexWebsocket(ContinuousDataAPI):
 
         client.create_retention_policy('retention_policy', '3d', 3, default=True)
         client.write_points(json_body)
-        print("Written point")
+        print("Written ticker update")
 
     async def run_tickers(self):
         websocket = await websockets.connect('wss://api2.poloniex.com')
@@ -112,6 +110,83 @@ class PoloniexWebsocket(ContinuousDataAPI):
                 currency_update = data[2]
                 await self.write_ticker(currency_update)
 
+    async def write_order_dump(self, order_dump, pair_id: int):
+        """
+        :param order_dump: [
+                            [
+                              "i",
+                              {
+                                "currencyPair": "<currency pair name>",
+                                "orderBook": [
+                                  {
+                                    "<lowest ask price>": "<lowest ask size>",
+                                    "<next ask price>": "<next ask size>",
+                                    …
+                                  },
+                                  {
+                                    "<highest bid price>": "<highest bid size>",
+                                    "<next bid price>": "<next bid size>",
+                                    …
+                                  }
+                                ]
+                              }
+                            ]
+                          ]
+        :param pair_id: Pair id described in WEBSOCKET_PAIRS
+        :return:
+        """
+        pass
+
+    async def write_order_update(self, order_updates, pair_id: int):
+        assert(pair_id in WEBSOCKET_PAIRS_INVERTED)
+        """
+
+        :param order_updates: An array of   [
+                                             ["o", <1 for buy 0 for sell>, "<price>", "<size>"],
+                                             ["o", <1 for buy 0 for sell>, "<price>", "<size>"],
+                                             ["t", "<trade id>", <1 for buy 0 for sell>, "<size>", "<price>", <timestamp>]
+                                           ]
+        :pair_id: Pair id described in WEBSOCKET_PAIRS
+        :return:
+        """
+        host = 'influxdb'
+        port = 8086
+        user = 'root'
+        password = 'root'
+        dbname = 'financial'
+        client = InfluxDBClient(host, port, user, password, dbname)
+        client.create_database('financial')
+        client.create_retention_policy('retention_policy', '3d', 3, default=True)
+
+        for update in order_updates:
+            if update[0] == 't':  # Trade
+                buy = False
+                if update[2] == 1:
+                    buy = True
+                else:
+                    buy = False
+
+                json_body = [
+                    {
+                        "measurement": "trade",
+                        "tags": {
+                            "exchange": "poloniex",
+                            "pair": WEBSOCKET_PAIRS_INVERTED[pair_id],
+                            "buy": buy
+                        },
+                        "time": time.time_ns(),
+                        "fields": {
+                            "size": update[4],
+                            "price": update[3]
+                        }
+                    }
+                ]
+
+                client.write_points(json_body)
+                print("Written trade")
+            elif update[0] == 'o':  # New order
+                print('New Order')
+
     async def run_orders(self):
         websocket = await websockets.connect('wss://api2.poloniex.com')
 
@@ -121,22 +196,21 @@ class PoloniexWebsocket(ContinuousDataAPI):
             asyncio.ensure_future(websocket.send(json.dumps({'command': 'subscribe', 'channel': WEBSOCKET_PAIRS[pair.pair]})))
 
         while True:
-            ack = await websocket.recv()  # Wait and discard acknowledgement
-            ack = json.loads(ack)
+            # Received data will look like: https://poloniex.com/support/api/#websockets_channels_aggregated
+            data = await websocket.recv()
+            data = json.loads(data)
 
             initial_dump = False
             try:
-                if ack[2][0][0] == 'i':
+                if data[2][0][0] == 'i':
                     initial_dump = True
-            except KeyError as e:
+            except KeyError:
                 pass
 
             if initial_dump:
                 print('Initial dump')
             else:
-                print('Update')
-
-        pass
+                await self.write_order_update(data[2], data[0])
 
     def run_test(self):
         loop = asyncio.get_event_loop()
