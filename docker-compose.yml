@@ -5,6 +5,7 @@ services:
                 build: ./webapp/
                 volumes:
                         - run-volume:/run
+                        - static-volume:/code/static/
         collector-orchestrator:
                 build: ./collection/
                 ports:
@@ -25,6 +26,7 @@ services:
                 volumes:
                         - ./webapp/nginx.conf:/etc/nginx/nginx.conf
                         - run-volume:/run
+                        - static-volume:/code/static/
                 ports:
                         - "80:80"
                         - "443:443"
@@ -40,3 +42,4 @@ volumes:
         run-volume:  # To share the gunicorn sock
         grafana-data:  # To persist grafana db
         influx-data:  # To persist influx db
+        static-volume: # To share the static files for Flask with Nginx

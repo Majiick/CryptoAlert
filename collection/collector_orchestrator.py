@@ -6,12 +6,16 @@ from data_source import continuous_data_apis
 
 
 def startup_queue():
+    '''
+    The startup queue enqueues all commands to start/stop continuous/normal workers.
+    '''
     context = zmq.Context()
     zmq_startup_channel = context.socket(zmq.PUSH)
     zmq_startup_channel.bind("tcp://0.0.0.0:5556")
 
     for k, v in continuous_data_apis.items():
-        zmq_startup_channel.send_json({'command': 'start_continuous', 'target': k})
+        pass
+        # zmq_startup_channel.send_json({'command': 'start_continuous', 'target': k})
 
 
 def main():

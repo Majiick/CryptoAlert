@@ -12,6 +12,7 @@ def create_client():
     try:
         client = InfluxDBClient(host, port, user, password, dbname)
     except requests.exceptions.RequestException as e:
+        # Wait for the DB to startup.
         time.sleep(0.5)
         client = InfluxDBClient(host, port, user, password, dbname)
     return client
