@@ -71,13 +71,6 @@ class PoloniexWebsocket(ContinuousDataAPI):
                 "<lowest trade price in last 24 hours>"
               ]
         """
-        host = 'influxdb'
-        port = 8086
-        user = 'root'
-        password = 'root'
-        dbname = 'financial'
-        client = InfluxDBClient(host, port, user, password, dbname)
-        client.create_database('financial')
 
         json_body = [
             {
@@ -93,8 +86,8 @@ class PoloniexWebsocket(ContinuousDataAPI):
             }
         ]
 
-        client.create_retention_policy('retention_policy', '3d', 3, default=True)
-        client.write_points(json_body)
+        db_client.create_retention_policy('retention_policy', '3d', 3, default=True)
+        db_client.write_points(json_body)
         print("Written ticker update")
 
     async def run_tickers(self):
@@ -149,14 +142,6 @@ class PoloniexWebsocket(ContinuousDataAPI):
         :pair_id: Pair id described in WEBSOCKET_PAIRS
         :return:
         """
-        host = 'influxdb'
-        port = 8086
-        user = 'root'
-        password = 'root'
-        dbname = 'financial'
-        client = InfluxDBClient(host, port, user, password, dbname)
-        client.create_database('financial')
-        client.create_retention_policy('retention_policy', '3d', 3, default=True)
 
         for update in order_updates:
             if update[0] == 't':  # Trade
@@ -182,7 +167,7 @@ class PoloniexWebsocket(ContinuousDataAPI):
                     }
                 ]
 
-                client.write_points(json_body)
+                db_client.write_points(json_body)
                 print("Written trade")
             elif update[0] == 'o':  # New order
                 print('New Order')
@@ -212,7 +197,7 @@ class PoloniexWebsocket(ContinuousDataAPI):
             else:
                 await self.write_order_update(data[2], data[0])
 
-    def run_test(self):
+    def run_blocking(self):
         loop = asyncio.get_event_loop()
         asyncio.ensure_future(self.run())
         loop.run_forever()

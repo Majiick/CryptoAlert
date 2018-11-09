@@ -63,7 +63,7 @@ class ContinuousDataAPI(ABC):
         self.pairs = pairs
 
     @abstractmethod
-    async def run(self):
+    async def run_blocking(self):
         pass
 
     @staticmethod
