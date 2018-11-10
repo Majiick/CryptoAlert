@@ -8,13 +8,8 @@ services:
                         - static-volume:/code/static/
         collector-orchestrator:
                 build: ./collection/
-                ports:
-                        - "5556:5556"
-                        - "5557:5557"
         collector:
                 build: ./collection/collector/
-                ports:
-                        - "27018:27018"
         postgres:
                 image: "postgres"
         influxdb:

@@ -180,10 +180,13 @@ class PoloniexWebsocket(ContinuousDataAPI):
                     }
                 ]
 
+                
+                time_started_send = time.time()
                 zmq_context = zmq.Context()
                 zmq_socket = zmq_context.socket(zmq.PUSH)
                 zmq_socket.connect("tcp://localhost:27018")
                 zmq_socket.send_json(json_body)
+                print('It took {} to push to collector publisher'.format(time.time() - time_started_send))
                 db_client.write_points(json_body)
                 print("Written trade")
             elif update[0] == 'o':  # New order
