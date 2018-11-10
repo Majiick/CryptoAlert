@@ -1,5 +1,6 @@
 import zmq
 import pandas as pd
+import collector_publisher
 from influxdb import DataFrameClient
 from multiprocessing import Process
 from typing import Type
@@ -7,6 +8,10 @@ from data_api import ContinuousDataAPI
 from data_source import continuous_data_apis
 
 def main():
+    # Start the collector_publisher
+    p = Process(target=collector_publisher.run)
+    p.start()
+
     context = zmq.Context()
 
     startup_channel = context.socket(zmq.PULL)

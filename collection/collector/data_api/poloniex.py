@@ -5,8 +5,10 @@ import json
 import websockets
 import asyncio
 import time
+import zmq
 from influxdb import InfluxDBClient
 from influxdb_init import db_client
+
 
 WEBSOCKET_PAIRS = {'BTC_BCN': 7, 'BTC_BTS': 14, 'BTC_BURST': 15, 'BTC_CLAM': 20,
                    'BTC_DGB': 25, 'BTC_DOGE': 27, 'BTC_DASH': 24, 'BTC_GAME': 38,
@@ -37,10 +39,21 @@ WEBSOCKET_PAIRS = {'BTC_BCN': 7, 'BTC_BTS': 14, 'BTC_BURST': 15, 'BTC_CLAM': 20,
 
 WEBSOCKET_PAIRS_INVERTED = {v: k for k, v in WEBSOCKET_PAIRS.items()}
 
-
+# context = zmq.Context()
+# socket = context.socket(zmq.PUSH)
+# socket.bind("tcp://0.0.0.0:27018")
+# print("before")
+# socket.send_json({'wtf': 'wtf'})
+# print("after")
 class PoloniexWebsocket(ContinuousDataAPI):
     def __init__(self, pairs: List[Pair]):
         self.pairs = pairs
+        #self.zmq_context = zmq.Context()
+        #self.zmq_socket = self.zmq_context.socket(zmq.PUSH)
+        #self.zmq_socket.bind("tcp://0.0.0.0:27018")
+        #print('before')
+        #self.zmq_socket.send_json({'wtf': 'wtf'})
+        #print('after')
 
     @staticmethod
     def get_all_pairs() -> List[Pair]:
@@ -167,10 +180,15 @@ class PoloniexWebsocket(ContinuousDataAPI):
                     }
                 ]
 
+                zmq_context = zmq.Context()
+                zmq_socket = zmq_context.socket(zmq.PUSH)
+                zmq_socket.connect("tcp://localhost:27018")
+                zmq_socket.send_json(json_body)
                 db_client.write_points(json_body)
                 print("Written trade")
             elif update[0] == 'o':  # New order
-                print('New Order')
+                pass
+                # print('New Order')
 
     async def run_orders(self):
         websocket = await websockets.connect('wss://api2.poloniex.com')
@@ -193,7 +211,8 @@ class PoloniexWebsocket(ContinuousDataAPI):
                 pass
 
             if initial_dump:
-                print('Initial dump')
+                pass
+                # print('Initial dump')
             else:
                 await self.write_order_update(data[2], data[0])
 

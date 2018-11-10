@@ -14,8 +14,7 @@ def startup_queue():
     zmq_startup_channel.bind("tcp://0.0.0.0:5556")
 
     for k, v in continuous_data_apis.items():
-        pass
-        # zmq_startup_channel.send_json({'command': 'start_continuous', 'target': k})
+        zmq_startup_channel.send_json({'command': 'start_continuous', 'target': k})
 
 
 def main():

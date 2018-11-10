@@ -9,9 +9,12 @@ services:
         collector-orchestrator:
                 build: ./collection/
                 ports:
+                        - "5556:5556"
                         - "5557:5557"
         collector:
                 build: ./collection/collector/
+                ports:
+                        - "27018:27018"
         postgres:
                 image: "postgres"
         influxdb:
@@ -37,6 +40,10 @@ services:
                         - grafana-data:/var/lib/grafana
                 ports:
                         - "3000:3000"
+        alert_generation:
+                build: ./alert_generation/
+        socketio_server:
+                build: ./socketio_server/
 
 volumes:
         run-volume:  # To share the gunicorn sock
