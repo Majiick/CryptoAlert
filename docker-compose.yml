@@ -38,7 +38,9 @@ services:
         alert_generation:
                 build: ./alert_generation/
         socketio_server:
-                build: ./socketio_server/
+                build: ./alert_generation/socketio_server/
+                ports:
+                        - "8333:8333"
 
 volumes:
         run-volume:  # To share the gunicorn sock
