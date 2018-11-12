@@ -27,7 +27,7 @@ services:
                         - static-volume:/code/static/
                 ports:
                         - "80:80"
-                        - "443:443"
+                        #  - "443:443"
         grafana:
                 image: "grafana/grafana"
                 volumes:
@@ -40,7 +40,7 @@ services:
         socketio_server:
                 build: ./alert_generation/socketio_server/
                 ports:
-                        - "8333:8333"
+                        - "443:443"
 
 volumes:
         run-volume:  # To share the gunicorn sock

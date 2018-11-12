@@ -1,5 +1,5 @@
 import eventlet
-# eventlet.monkey_patch()
+eventlet.monkey_patch()
 import socketio
 import zmq
 import threading
@@ -13,7 +13,7 @@ sio = socketio.Server(async_mode='eventlet')
 @sio.on('connect', namespace='/price_update')
 def connect(sid, environ):
     print("connect ", sid)
-    sio.emit('price_update', {'data': 'test'}, namespace='/price_update')
+    sio.emit('price_update', {'data': 'Connection established.'}, namespace='/price_update')
 
 
 def listen_to_alert_pub():
@@ -23,20 +23,16 @@ def listen_to_alert_pub():
     sub_socket.setsockopt_string(zmq.SUBSCRIBE, '')
 
     while True:
+        eventlet.sleep(0)
         json = sub_socket.recv_json()
         print(json)
         sio.emit('price_update', {'data': json}, namespace='/price_update')
 
 
-def serve_app(_sio, _app):
-    app = socketio.Middleware(_sio, _app)
-    eventlet.wsgi.server(eventlet.listen(('', 8333)), app)
-    
-
-t = threading.Thread(target=listen_to_alert_pub)
-t.start()
+# t = threading.Thread(target=listen_to_alert_pub)
+# t.start()
 
 app = socketio.Middleware(sio, app)
-# sio.start_background_task(target=listen_to_alert_pub)
-eventlet.wsgi.server(eventlet.listen(('', 8333)), app)
+sio.start_background_task(target=listen_to_alert_pub)
+eventlet.wsgi.server(eventlet.listen(('', 443)), app)
 

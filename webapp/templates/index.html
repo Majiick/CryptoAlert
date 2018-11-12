@@ -2,7 +2,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js"></script>
 
 <script>
-  const socket = io('http://209.97.181.63:8333/price_update');
+  const socket = io('http://209.97.181.63:443/price_update');
 
   socket.on('price_update', function (data) {
     console.log(data);
