@@ -3,4 +3,9 @@
 
 <script>
   const socket = io('http://209.97.181.63:8333/price_update');
+
+  socket.on('price_update', function (data) {
+    console.log(data);
+    //socket.emit('my other event', { my: 'data' });
+  });
 </script>
