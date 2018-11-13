@@ -6,6 +6,7 @@ RUN pip install mypy
 ADD . /code
 WORKDIR /code
 ENV PYTHONPATH "${PYTHONPATH}:/code"
+ENV PYTHONPATH "${PYTHONPATH}:/code/alerts"
 
 RUN mypy --ignore-missing-imports alert_generation.py 
 CMD ["python", "-u", "alert_generation.py"]
