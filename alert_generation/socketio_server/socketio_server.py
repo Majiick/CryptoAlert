@@ -26,12 +26,16 @@ def listen_to_alert_pub():
     while True:
         # TODO: Sleep 0 here might be causing big delays
         eventlet.sleep(0)
-        json = sub_socket.recv_json()
-        print(json)
-        if json['measurement'] == 'latest_price':
-            sio.emit('price_update', {'data': json})
-        if json['measurement'] == 'alert':
-            sio.emit('alert', {'data': json})
+
+        try:
+            json = sub_socket.recv_json(flags=zmq.NOBLOCK)
+
+            if json['measurement'] == 'latest_price':
+                sio.emit('price_update', {'data': json})
+            if json['measurement'] == 'alert':
+                sio.emit('alert', {'data': json})
+        except zmq.Again:
+            pass  # No message
 
 
 # t = threading.Thread(target=listen_to_alert_pub)

@@ -1,6 +1,8 @@
 import postgresql_init
 import zmq
 from price_point import PricePoint
+from alert import Alert
+from typing import List, Type, Dict
 
 print("Started alert generation")
 
@@ -15,16 +17,19 @@ workers_socket.setsockopt_string(zmq.SUBSCRIBE, '')
 pub = context.socket(zmq.PUB)
 pub.bind('tcp://0.0.0.0:28000')
 
-pp_alert = PricePoint('poloniex', 'USDT_BTC', 0.5, 'up')
 while True:
+    alerts: List[Alert] = []
+    alerts.extend(PricePoint.get_all_from_db())
     json = workers_socket.recv_json()
     print(json)
 
     if json[0]['measurement'] == 'trade':
         pub.send_json({'measurement': 'latest_price', 'exchange': json[0]['tags']['exchange'], 'pair': json[0]['tags']['pair'], 'price': json[0]['fields']['price']})
-        
-        if pp_alert.trigger(json[0]):
-            print('pp fired off')
-            pub.send_json({'measurement': 'alert', 'alert': 'price_point', 'price_point': pp_alert.__dict__})
+
+        for alert in alerts:
+            print(alert.__dict__)
+            if alert.trigger(json[0]):
+                print('pp fired off')
+                pub.send_json({'measurement': 'alert', 'alert': 'price_point', 'price_point': alert.__dict__})
 
 
