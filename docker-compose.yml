@@ -12,6 +12,11 @@ services:
                 build: ./collection/collector/
         postgres:
                 image: "postgres"
+                # restart: always
+                environment:
+                        - POSTGRES_PASSWORD:password
+                volumes:
+                        - postgres-data:/var/lib/postgresql/data
         influxdb:
                 image: "influxdb"
                 ports:
@@ -47,3 +52,4 @@ volumes:
         grafana-data:  # To persist grafana db
         influx-data:  # To persist influx db
         static-volume: # To share the static files for Flask with Nginx
+        postgres-data: # To persist postgre db

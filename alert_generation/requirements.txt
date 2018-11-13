@@ -1,1 +1,3 @@
 pyzmq
+SQLAlchemy
+psycopg2

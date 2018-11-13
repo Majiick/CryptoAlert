@@ -10,6 +10,7 @@ print("Started socketio server")
 app = web.Application()
 sio = socketio.Server(async_mode='eventlet')
 
+
 @sio.on('connect', namespace='/price_update')
 def connect(sid, environ):
     print("connect ", sid)

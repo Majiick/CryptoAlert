@@ -1,3 +1,4 @@
+import postgresql_init
 import zmq
 from price_point import PricePoint
 
