@@ -2,12 +2,13 @@ from flask import Flask, render_template
 import zmq
 import pandas as pd
 from influxdb import DataFrameClient
-app = Flask(__name__)
+
+app = Flask(__name__, static_folder='./static', template_folder='./static')
 
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('dist/index.html')
 
 
 @app.route('/dbtest')
