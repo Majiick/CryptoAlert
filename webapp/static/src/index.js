@@ -20,3 +20,5 @@ socket.on('alert', function (data) {
 });
 
 document.body.appendChild(component());
+
+
