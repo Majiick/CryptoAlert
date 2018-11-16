@@ -16,6 +16,7 @@ RUN npm install
 ADD . /code
 RUN npm run-script build
 
+
 WORKDIR /code
 RUN pip install -r requirements.txt
 RUN pip install mypy
