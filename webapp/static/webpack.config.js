@@ -14,15 +14,15 @@ module.exports = {
 					loader: "babel-loader"
 				}]
 			  }, {
-				test: /\.(png|woff|woff2|eot|ttf|svg)$/,
+				test: /\.(png|woff|woff2|eot|ttf|svg)$/,  // For importing css with semantics ui
 				loader: 'url-loader?limit=100000'
 			  },
 			  {
-		                test: /\.s[a|c]ss$/,
+		                test: /\.s[a|c]ss$/,  // For importing css with semantics ui
 		                loader: 'sass-loader!style-loader!css-loader'
 		          },
 		          {
-		                test: /\.css$/,
+		                test: /\.css$/,  // For importing css with semantics ui
 		                loader: 'style-loader!css-loader'
 		          }]
 		},
