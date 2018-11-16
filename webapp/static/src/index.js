@@ -11,18 +11,6 @@ function component() {
 	return element;
 }
 
-const socket = io('http://209.97.181.63:443/');
-
-socket.on('price_update', function (data) {
-    console.log(data);
-    //socket.emit('my other event', { my: 'data' });
-});
-
-socket.on('alert', function (data) {
-    console.log('ALERT!!!');
-    console.log(data);
-});
-
 class AlertsButton extends React.Component {
     constructor(props) {
         super(props);
@@ -70,9 +58,6 @@ class TopMenu extends React.Component {
 class Alerts extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {alert_notification: [], subscribed_alerts: []};
-        this.state.alert_notification.push(<List.Item>Test Alert Notification</List.Item>);
-        this.state.subscribed_alerts.push(<List.Item>Test My Alert</List.Item>);
     }
 
     render() {
@@ -81,7 +66,7 @@ class Alerts extends React.Component {
             <Container>
                 <Header as='h2'>Alert Notifications</Header>
                 <List>
-                    {this.state.alert_notification}
+                    {this.props.alert_notification}
                 </List>
             </Container>
 
@@ -90,7 +75,7 @@ class Alerts extends React.Component {
             <Container>
                 <Header as='h2'>My Alerts</Header>
                 <List>
-                    {this.state.subscribed_alerts}
+                    {this.props.subscribed_alerts}
                 </List>
             </Container>
             </React.Fragment>
@@ -101,14 +86,32 @@ class Alerts extends React.Component {
 class App extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {number_alerts: 0}
+        this.state = {number_alerts: 0, alert_notification: [], subscribed_alerts: []}
+        this.state.alert_notification.push(<List.Item>Test Alert Notification</List.Item>);
+        this.state.subscribed_alerts.push(<List.Item>Test My Alert</List.Item>);
+
+        const socket = io('http://209.97.181.63:443/');
+
+        socket.on('price_update', function (data) {
+            console.log(data);
+            //socket.emit('my other event', { my: 'data' });
+        });
+
+        // Only rerenders on setState not just this.state.something = whatever
+        socket.on('alert', (data) => {
+            console.log('ALERT!!!');
+            this.state.subscribed_alerts.push(<List.Item>{JSON.stringify(data)}</List.Item>);
+            this.setState({});
+            console.log(data);
+            console.log(this.state.subscribed_alerts);
+        });
     }
 
     render() {
         return (
             <React.Fragment>
                 <TopMenu number_alerts={ this.state.number_alerts} />
-                <Alerts />
+                <Alerts subscribed_alerts={this.state.subscribed_alerts} alert_notification={this.state.alert_notification}/>
             </React.Fragment>
         );
     }
