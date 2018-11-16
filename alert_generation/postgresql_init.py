@@ -10,7 +10,7 @@ escaped_sql = sqlalchemy.text(file.read())
 try:
     engine.execute(escaped_sql)
 except sqlalchemy.exc.OperationalError:
-    time.sleep(2)  # Wait for postgres to startup.
+    time.sleep(5)  # Wait for postgres to startup.
     engine.execute(escaped_sql)
 
 with engine.begin() as conn:
