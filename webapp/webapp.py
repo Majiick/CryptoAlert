@@ -1,14 +1,87 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, current_app, redirect, url_for
 import zmq
 import pandas as pd
 from influxdb import DataFrameClient
+from flask_login import LoginManager, login_user, UserMixin, login_required, current_user
+from typing import List, Dict, Type
 
 app = Flask(__name__, static_folder='./static', template_folder='./static')
+app.secret_key = b'8ae5144d0676496af705b6b3af000275f81ff1579a6eca72'
+login_manager = LoginManager(app=app)
+
+
+class User(UserMixin):
+    def __init__(self, id):
+        self.id = id
+
+    @property
+    def is_active(self):
+        return True
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        try:
+            return self.id
+        except AttributeError:
+            raise NotImplementedError('No `id` attribute - override `get_id`')
+
+    def __eq__(self, other):
+        '''
+        Checks the equality of two `UserMixin` objects using `get_id`.
+        '''
+        if isinstance(other, UserMixin):
+            return self.get_id() == other.get_id()
+        return NotImplemented
+
+    def __ne__(self, other):
+        '''
+        Checks the inequality of two `UserMixin` objects using `get_id`.
+        '''
+        equal = self.__eq__(other)
+        if equal is NotImplemented:
+            return NotImplemented
+        return not equal
+
+
+logged_in_users: Dict[str, User] = dict()  # id to User
+@login_manager.user_loader
+def load_user(user_id):
+    if user_id in logged_in_users:
+        print('User logged in', flush=True)
+        return logged_in_users[user_id]
+    else:
+        print('User not logged in', flush=True)
+        return None
 
 
 @app.route('/')
 def index():
     return render_template('dist/index.html')
+
+
+@app.route('/login', methods=['POST', 'GET'])
+def login():
+    user = User('random user id')
+    logged_in_users[user.get_id()] = user
+    login_user(user)
+    print('New user logged in', flush=True)
+
+    return redirect(url_for('index'))
+
+
+@app.route('/logintest')
+def logged_in_test():
+    if not current_user.is_authenticated:
+        return current_app.login_manager.unauthorized()
+
+    return 'Logged in, your used id is: ' + current_user.get_id()
 
 
 @app.route('/dbtest')
