@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import 'semantic-ui-css/semantic.min.css';
-import { Button, Icon, Label, Menu, List, Header, Container, Divider } from 'semantic-ui-react'
+import { Button, Icon, Label, Menu, List, Header, Container, Divider, Input, Segment } from 'semantic-ui-react'
 import React from 'react';
 import ReactDOM from 'react-dom';
 
@@ -34,6 +34,31 @@ class AlertsButton extends React.Component {
 }
 
 
+class LoginButtonAndForm extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            login: '',
+            password: ''
+        };
+    }
+
+    render() {
+      return (
+          <Segment>
+              <Input focus placeholder='User' onChange={(e) => this.state.login = e.target.value} />
+              <Input focus type='password' placeholder='Password' onChange={(e) => this.state.password = e.target.value} />
+              <Button onClick={(e) => this.handleClick(e)}>Login</Button>
+          </Segment>
+        );
+    }
+
+    handleClick() {
+        console.log(this.state.login);
+        console.log(this.state.password);
+    }
+}
+
 class TopMenu extends React.Component {
     state = {activeItem: 'home'}
     handleItemClick = (e, { name }) => this.setState({ activeItem: name })
@@ -47,6 +72,7 @@ class TopMenu extends React.Component {
             <Menu.Item name='alerts' active={activeItem === 'alerts'} onClick={this.handleItemClick} />
             <Menu.Menu position='right'>
                 <AlertsButton number_alerts={this.props.number_alerts}/>
+                <LoginButtonAndForm/>
             </Menu.Menu>
 
           </Menu>

@@ -1,9 +1,10 @@
-from flask import Flask, render_template, current_app, redirect, url_for
+from flask import Flask, render_template, current_app, redirect, url_for, request
 import zmq
 import pandas as pd
 from influxdb import DataFrameClient
 from flask_login import LoginManager, login_user, UserMixin, login_required, current_user
 from typing import List, Dict, Type
+import uuid
 
 app = Flask(__name__, static_folder='./static', template_folder='./static')
 app.secret_key = b'8ae5144d0676496af705b6b3af000275f81ff1579a6eca72'
@@ -66,9 +67,11 @@ def index():
     return render_template('dist/index.html')
 
 
-@app.route('/login', methods=['POST', 'GET'])
+@app.route('/login', methods=['POST'])
 def login():
-    user = User('random user id')
+    print(request.data)
+
+    user = User(uuid.uuid4().hex)
     logged_in_users[user.get_id()] = user
     login_user(user)
     print('New user logged in', flush=True)
