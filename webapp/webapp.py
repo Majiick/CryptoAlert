@@ -4,7 +4,9 @@ import pandas as pd
 from influxdb import DataFrameClient
 from flask_login import LoginManager, login_user, UserMixin, login_required, current_user
 from typing import List, Dict, Type
+from postgresql_init import engine
 import uuid
+from sqlalchemy.sql import text
 
 app = Flask(__name__, static_folder='./static', template_folder='./static')
 app.secret_key = b'8ae5144d0676496af705b6b3af000275f81ff1579a6eca72'
@@ -55,10 +57,10 @@ logged_in_users: Dict[str, User] = dict()  # id to User
 @login_manager.user_loader
 def load_user(user_id):
     if user_id in logged_in_users:
-        print('User logged in', flush=True)
+        print('User is logged in', flush=True)
         return logged_in_users[user_id]
     else:
-        print('User not logged in', flush=True)
+        print('User is not logged in', flush=True)
         return None
 
 
@@ -69,14 +71,28 @@ def index():
 
 @app.route('/login', methods=['POST'])
 def login():
-    print(request.data)
+    user_name = request.json['username']
+    password = request.json['password']
 
-    user = User(uuid.uuid4().hex)
-    logged_in_users[user.get_id()] = user
-    login_user(user)
-    print('New user logged in', flush=True)
+    with engine.begin() as conn:
+        result = conn.execute(text("select user_pk from REGISTERED_USER WHERE LOWER(user_name) = LOWER(:user_name) AND password = :password"), user_name = user_name, password = password)
+        row = result.fetchone()
 
-    return redirect(url_for('index'))
+        if row:
+            user = User(row['user_pk'])
+            logged_in_users[user.get_id()] = user
+            login_user(user)
+            print('New user logged in', flush=True)
+            return 'Logged in successfully'
+        else:
+            return 'invalid login'
+    
+    return 'invalid login'
+
+
+@app.route('/register', methods=['POST'])
+def register():
+    pass
 
 
 @app.route('/logintest')

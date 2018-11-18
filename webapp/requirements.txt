@@ -5,3 +5,5 @@ pandas
 #influxdb
 git+git://github.com/influxdata/influxdb-python@master
 flask-login
+SQLAlchemy
+psycopg2

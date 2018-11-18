@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import 'semantic-ui-css/semantic.min.css';
-import { Button, Icon, Label, Menu, List, Header, Container, Divider, Input, Segment } from 'semantic-ui-react'
+import { Button, Icon, Label, Menu, List, Header, Container, Divider, Input, Segment, TransitionablePortal } from 'semantic-ui-react'
 import React from 'react';
 import ReactDOM from 'react-dom';
 
@@ -39,23 +39,46 @@ class LoginButtonAndForm extends React.Component {
         super(props);
         this.state = {
             login: '',
-            password: ''
+            password: '',
+	    open: false
         };
     }
 
     render() {
+	const {open} = this.state;
       return (
-          <Segment>
+	<React.Fragment>
+	      <Button
+	         content={open ? 'Login' : 'Login'}
+	         negative={open}
+	         positive={!open}
+	         onClick={() => this.setState({open: !this.state.open})}
+	      />
+
+	  <TransitionablePortal onClose={() => this.setState({open: false})} open={open}>
+          <Segment style={{left: '40%', position: 'fixed', top: '50%', zIndex: 1000}}>
               <Input focus placeholder='User' onChange={(e) => this.state.login = e.target.value} />
               <Input focus type='password' placeholder='Password' onChange={(e) => this.state.password = e.target.value} />
-              <Button onClick={(e) => this.handleClick(e)}>Login</Button>
+              <Button onClick={(e) => this.handleLoginClick(e)}>Login</Button>
           </Segment>
+	  </TransitionablePortal>
+	</React.Fragment>
         );
     }
 
-    handleClick() {
+    handleLoginClick() {
         console.log(this.state.login);
         console.log(this.state.password);
+
+	$.ajax({
+		  type: "POST",
+		  contentType: "application/json; charset=utf-8",
+		  url: "/login",
+		  data: JSON.stringify({username: this.state.login, password: this.state.password}),
+		  success: function (data) {
+			      alert(data);
+			    }
+	});
     }
 }
 
