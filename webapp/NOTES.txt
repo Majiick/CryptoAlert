@@ -1,0 +1,11 @@
+To run:
+npx webpack inside static/ to build the bundle.js, but bundle.js must first be deleted.
+Also docker-compose down --volumes must be ran before that and of course docker-compose build
+
+
+Example JWT:
+ecoste@DESKTOP-PAA4I0V:~$ curl --header "Content-Type: application/json"   --request POST   --data '{"username":"ecoste","password":"password"}'   209.97.181.63:80/auth
+{"access_token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1NDI2NDQ4NzgsImlhdCI6MTU0MjY0NDU3OCwibmJmIjoxNTQyNjQ0NTc4LCJpZGVudGl0eSI6MX0.L84IRfizZL9RvMbibPG2Z2BvH23YaYGG55vEVcUoIHw"}
+
+curl --header "Content-Type: application/json"  --header "Authorization: JWT eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1NDI2NDQ4NzgsImlhdCI6MTU0MjY0NDU3OCwibmJmIjoxNTQyNjQ0NTc4LCJpZGVudGl0eSI6MX0.L84IRfizZL9RvMbibPG2Z2BvH23YaYGG55vEVcUoIHw"   --request GET   209.97.181.63:80/getsubscribedalerts
+{"price_point_alert":[{"direction":"up","exchange":"*","pair":"*","point":0.5}]}

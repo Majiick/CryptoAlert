@@ -7,3 +7,4 @@ git+git://github.com/influxdata/influxdb-python@master
 flask-login
 SQLAlchemy
 psycopg2
+Flask-JWT

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, current_app, redirect, url_for, request
+from flask import Flask, render_template, current_app, redirect, url_for, request, jsonify
 import zmq
 import pandas as pd
 from influxdb import DataFrameClient
@@ -7,10 +7,8 @@ from typing import List, Dict, Type
 from postgresql_init import engine
 import uuid
 from sqlalchemy.sql import text
+from flask_jwt import JWT, jwt_required, current_identity
 
-app = Flask(__name__, static_folder='./static', template_folder='./static')
-app.secret_key = b'8ae5144d0676496af705b6b3af000275f81ff1579a6eca72'
-login_manager = LoginManager(app=app)
 
 
 class User(UserMixin):
@@ -53,7 +51,40 @@ class User(UserMixin):
         return not equal
 
 
+def authenticate_jwt(user_name, password):
+    with engine.begin() as conn:
+        result = conn.execute(text("select user_pk from REGISTERED_USER WHERE LOWER(user_name) = LOWER(:user_name) AND password = :password"), user_name = user_name, password = password)
+        row = result.fetchone()
+
+        if row:
+            user = User(row['user_pk'])
+            return user
+        else:
+            return None
+
+def identity_jwt(payload):
+    user_pk = payload['identity']
+
+    with engine.begin() as conn:
+        result = conn.execute(text("select user_pk from REGISTERED_USER WHERE user_pk = :user_pk"), user_pk = user_pk)
+        row = result.fetchone()
+
+        if row:
+            user = User(row['user_pk'])
+            return user
+        else:
+            return None
+
+
+########################################################################################################################################################
 logged_in_users: Dict[str, User] = dict()  # id to User
+app = Flask(__name__, static_folder='./static', template_folder='./static')
+app.secret_key = b'8ae5144d0676496af705b6b3af000275f81ff1579a6eca72'
+login_manager = LoginManager(app=app)
+jwt = JWT(app, authenticate_jwt, identity_jwt)
+########################################################################################################################################################
+
+
 @login_manager.user_loader
 def load_user(user_id):
     if user_id in logged_in_users:
@@ -101,6 +132,24 @@ def logged_in_test():
         return current_app.login_manager.unauthorized()
 
     return 'Logged in, your used id is: ' + current_user.get_id()
+
+
+@app.route('/getsubscribedalerts')
+@jwt_required()
+def get_subscribed_alerts():
+    # All lower case
+    ret = {}  # ret{<table_name> : [list of table json objects]} e.g. ret['price_point_alert'] = [{alert_pk: 1, created_by_user: 2, etc...}]
+
+    with engine.begin() as conn:
+        ret['price_point_alert'] = []
+        result = conn.execute(text("SELECT exchange, pair, point, direction FROM PRICE_POINT_ALERT WHERE created_by_user = :user_pk"),
+                              user_pk=current_identity.get_id())  # current_identity is JWT's proxy for User class
+
+        for row in result:
+            d = dict(row.items())
+            ret['price_point_alert'].append(d)
+
+    return jsonify(ret)
 
 
 @app.route('/dbtest')

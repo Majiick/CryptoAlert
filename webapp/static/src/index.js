@@ -3,6 +3,32 @@ import 'semantic-ui-css/semantic.min.css';
 import { Button, Icon, Label, Menu, List, Header, Container, Divider, Input, Segment, TransitionablePortal } from 'semantic-ui-react'
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { createStore } from 'redux'
+
+const reduxState = {
+  jwt_token: ''
+}
+
+function reduxReducer(state, action) {
+  if (typeof state === 'undefined') {
+    return reduxState;
+  }
+
+  switch (action.type) {
+      case "JWTTOKEN":
+          state['jwt_token'] = action.token;
+          console.log('jwt token updated');
+          return state;
+      default:
+          console.warn('Default redux action, state not changed, action.');
+          console.warn(action);
+          return state;
+  }
+
+  return state;
+}
+
+const reduxStore = createStore(reduxReducer);
 
 function component() {
 	let element = document.createElement('div');
@@ -70,15 +96,28 @@ class LoginButtonAndForm extends React.Component {
         console.log(this.state.login);
         console.log(this.state.password);
 
-	$.ajax({
-		  type: "POST",
-		  contentType: "application/json; charset=utf-8",
-		  url: "/login",
-		  data: JSON.stringify({username: this.state.login, password: this.state.password}),
-		  success: function (data) {
-			      alert(data);
-			    }
-	});
+        // Flask Login
+        $.ajax({
+              type: "POST",
+              contentType: "application/json; charset=utf-8",
+              url: "/login",
+              data: JSON.stringify({username: this.state.login, password: this.state.password}),
+              success: function (data) {
+                      alert(data);
+                    }
+        });
+
+        // JWT Login
+        $.ajax({
+              type: "POST",
+              contentType: "application/json; charset=utf-8",
+              url: "/auth",
+              data: JSON.stringify({username: this.state.login, password: this.state.password}),
+              dataType: "json",
+              success: function (data) {
+                      reduxStore.dispatch({type: 'JWTTOKEN', token: data['access_token']});
+                    }
+        });
     }
 }
 
@@ -138,6 +177,7 @@ class App extends React.Component {
         this.state = {number_alerts: 0, alert_notification: [], subscribed_alerts: []}
         this.state.alert_notification.push(<List.Item>Test Alert Notification</List.Item>);
         this.state.subscribed_alerts.push(<List.Item>Test My Alert</List.Item>);
+        let logged_in = false;
 
         const socket = io('http://209.97.181.63:443/');
 
@@ -148,12 +188,36 @@ class App extends React.Component {
 
         // Only rerenders on setState not just this.state.something = whatever
         socket.on('alert', (data) => {
-            console.log('ALERT!!!');
-            this.state.subscribed_alerts.push(<List.Item>{JSON.stringify(data)}</List.Item>);
-            this.setState({});
-            console.log(data);
-            console.log(this.state.subscribed_alerts);
+            if(logged_in) {
+                console.log('ALERT!!!');
+                this.state.alert_notification.push(<List.Item>{JSON.stringify(data)}</List.Item>);
+                this.setState({});
+                console.log(data);
+                console.log(this.state.subscribed_alerts);
+            }
         });
+
+        let reduxChangedState = () => {
+            if (reduxState.jwt_token) {
+                if (!logged_in) {  // On first login
+                    // Update my alerts
+                    $.ajax({
+                          type: "GET",
+                          headers: {"Authorization": "JWT " + reduxState.jwt_token, contentType: "application/json; charset=utf-8"},
+                          url: "/getsubscribedalerts",
+                          dataType: "json",
+                          success: (data) => {
+                                  this.state.subscribed_alerts.push(<List.Item>{JSON.stringify(data)}</List.Item>);
+                                  this.setState({});
+                                }
+                    });
+                }
+
+                logged_in = true;
+            }
+        }
+
+        reduxStore.subscribe(reduxChangedState);
     }
 
     render() {

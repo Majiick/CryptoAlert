@@ -1,2 +1,0 @@
-npx webpack inside static/ to build the bundle.js, but bundle.js must first be deleted.
-Also docker-compose down --volumes must be ran before that and of course docker-compose build
