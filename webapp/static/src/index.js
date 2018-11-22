@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import 'semantic-ui-css/semantic.min.css';
-import { Button, Icon, Label, Menu, List, Header, Container, Divider, Input, Segment, TransitionablePortal } from 'semantic-ui-react'
+import { Button, Icon, Label, Menu, List, Header, Container, Divider, Input, Segment, TransitionablePortal, Dropdown } from 'semantic-ui-react'
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { createStore } from 'redux'
@@ -19,6 +19,10 @@ function reduxReducer(state, action) {
           state['jwt_token'] = action.token;
           console.log('jwt token updated');
           return state;
+      case "TOPMENUSELECTION":
+          state['topMenuSelection'] = action.selection;
+	  console.log('top menu selection dispatched selection: ' + action.selection);
+	  return state;
       default:
           console.warn('Default redux action, state not changed, action.');
           console.warn(action);
@@ -123,7 +127,10 @@ class LoginButtonAndForm extends React.Component {
 
 class TopMenu extends React.Component {
     state = {activeItem: 'home'}
-    handleItemClick = (e, { name }) => this.setState({ activeItem: name })
+    handleItemClick = (e, { name }) => {
+	    this.setState({ activeItem: name });
+	    reduxStore.dispatch({type: 'TOPMENUSELECTION', selection: name});
+    }
 
     render() {
         const { activeItem } = this.state;
@@ -143,14 +150,101 @@ class TopMenu extends React.Component {
 }
 
 
+class CreateAlertPricePoint extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {point: 0, exchange: '', pair: ''};
+    }
+
+    render() {
+        const exchangeOptions = [
+          { key: 'poloniex', text: 'Poloniex', value: 'poloniex' },
+          { key: 'bittrex', text: 'Bittrex', value: 'bittrex' },
+          { key: 'kraken', text: 'Kraken', value: 'kraken' }
+        ];
+
+        const belowAboveOptions = [
+          { key: 'above', text: 'Above', value: 'above' },
+          { key: 'below', text: 'Below', value: 'below' }
+        ];
+
+        return(
+          <React.Fragment>
+              <Input focus placeholder='Price Point' onChange={(e) => this.setState({point: e.target.value})} />
+              <Dropdown placeholder='Exchange' fluid multiple selection options={exchangeOptions} />
+              <Dropdown placeholder='Below/Above' fluid multiple selection options={belowAboveOptions} />
+              <Button onClick={(e) => this.handleLoginClick(e)}>Create Alert</Button>
+          </React.Fragment>
+        );
+    }
+}
+
+
+class CreateAlert extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {activeAlert: 'none'};
+    }
+
+    render() {
+        return(
+             <Segment style={{left: '40%', position: 'fixed', top: '50%', zIndex: 1000}}>
+                  <h1>Create Alert</h1>
+                  <div>
+                    <Button basic onClick={() => this.setState({activeAlert: 'price_point'})}>
+                      Price Point
+                    </Button>
+                    <Button basic color='red' onClick={() => this.setState({activeAlert: 'price_percentage_change'})}>
+                      Price Percentage Change
+                    </Button>
+                    <Button basic color='orange' onClick={() => this.setState({activeAlert: 'price_divergence'})}>
+                      Price Divergence
+                    </Button>
+                    <Button basic color='yellow' onClick={() => this.setState({activeAlert: 'profitloss'})}>
+                      Profit/Loss
+                    </Button>
+                    <Button basic color='violet'>
+                      Volume Point
+                    </Button>
+                    <Button basic color='purple'>
+                      Volume Percentage Change
+                    </Button>
+                    <Button basic color='pink'>
+                      New Coin
+                    </Button>
+                  </div>
+
+        {this.state.activeAlert == 'price_point' ? (<CreateAlertPricePoint />) : null}
+              </Segment>
+        );
+    }
+}
+
+
 class Alerts extends React.Component {
     constructor(props) {
         super(props);
+        this.state = {createalertopen: false}
+    }
+
+    createAlertButtonClicked() {
+	    console.log('Create alert button clicked');
     }
 
     render() {
         return (
             <React.Fragment>
+                <Button
+                     content={this.state.createalertopen ? 'Create Alert' : 'Create Alert'}
+                     negative={this.state.createalertopen}
+                     positive={!this.state.createalertopen}
+                     onClick={() => this.setState({createalertopen: !this.state.createalertopen})}
+                  />
+
+                <TransitionablePortal onClose={() => this.setState({createalertopen: false})} open={this.state.createalertopen}>
+                  <CreateAlert />
+                </TransitionablePortal>
+
             <Container>
                 <Header as='h2'>Alert Notifications</Header>
                 <List>
@@ -215,16 +309,24 @@ class App extends React.Component {
 
                 logged_in = true;
             }
+
+	    console.log('Update app state');
+	    this.setState({}); // Update state for topmenu redux update
         }
 
         reduxStore.subscribe(reduxChangedState);
     }
 
     render() {
+	const state_ = this.state;
+	console.log(reduxState.topMenuSelection);
         return (
             <React.Fragment>
                 <TopMenu number_alerts={ this.state.number_alerts} />
-                <Alerts subscribed_alerts={this.state.subscribed_alerts} alert_notification={this.state.alert_notification}/>
+		{reduxState.topMenuSelection == 'alerts' ? (
+                	<Alerts subscribed_alerts={state_.subscribed_alerts} alert_notification={state_.alert_notification}/>
+			) : null
+		}
             </React.Fragment>
         );
     }

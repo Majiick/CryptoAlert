@@ -30,6 +30,6 @@ while True:
             print(alert.__dict__)
             if alert.trigger(json[0]):
                 print('pp fired off')
-                pub.send_json({'measurement': 'alert', 'alert': 'price_point', 'price_point': alert.__dict__})
+                pub.send_json({'measurement': 'alert', 'alert': 'price_point', 'price_point': alert.__dict__, 'trade': json[0]})
 
 
