@@ -153,7 +153,27 @@ class TopMenu extends React.Component {
 class CreateAlertPricePoint extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {point: 0, exchange: '', pair: ''};
+        this.state = {point: 0, exchange: '', pair: '', below_above: ''};
+    }
+
+    createAlertButtonClicked() {
+        if (reduxState.jwt_token == '') {
+            console.warn('JWT Token not set for create alert');
+            return;
+        }
+
+	    $.ajax({
+              type: "POST",
+              contentType: "application/json; charset=utf-8",
+              headers: {"Authorization": "JWT " + reduxState.jwt_token},
+              url: "/createalert",
+              data: JSON.stringify({alert: 'pricepoint', pair: this.state.pair, exchange: this.state.exchange, point: this.state.point, below_above: this.state.below_above}),
+              dataType: "json",
+              success: (data) => {
+                      console.log("Server said this on createalert: ");
+                      console.log(data);
+                    }
+        });
     }
 
     render() {
@@ -161,6 +181,12 @@ class CreateAlertPricePoint extends React.Component {
           { key: 'poloniex', text: 'Poloniex', value: 'poloniex' },
           { key: 'bittrex', text: 'Bittrex', value: 'bittrex' },
           { key: 'kraken', text: 'Kraken', value: 'kraken' }
+        ];
+
+        const pairOptions = [
+          { key: 'btcusd', text: 'BTCUSD', value: 'btcusd' },
+          { key: 'btceth', text: 'BTCETH', value: 'btceth' },
+          { key: 'all', text: 'All', value: 'all' }
         ];
 
         const belowAboveOptions = [
@@ -171,9 +197,10 @@ class CreateAlertPricePoint extends React.Component {
         return(
           <React.Fragment>
               <Input focus placeholder='Price Point' onChange={(e) => this.setState({point: e.target.value})} />
-              <Dropdown placeholder='Exchange' fluid multiple selection options={exchangeOptions} />
-              <Dropdown placeholder='Below/Above' fluid multiple selection options={belowAboveOptions} />
-              <Button onClick={(e) => this.handleLoginClick(e)}>Create Alert</Button>
+              <Dropdown placeholder='Pair' fluid multiple selection options={pairOptions} onChange={(e, { value }) => this.setState({pair: value})} />
+              <Dropdown placeholder='Exchange' fluid multiple selection options={exchangeOptions} onChange={(e, { value }) => this.setState({exchange: value})} />
+              <Dropdown placeholder='Below/Above' fluid selection options={belowAboveOptions} onChange={(e, { value }) => this.setState({below_above: value})} />
+              <Button onClick={(e) => this.createAlertButtonClicked(e)}>Create Alert</Button>
           </React.Fragment>
         );
     }

@@ -152,6 +152,15 @@ def get_subscribed_alerts():
     return jsonify(ret)
 
 
+@app.route('/createalert', methods=['POST'])
+@jwt_required()
+def create_alert():
+    # JSON Data example: {'alert': 'pricepoint', 'pair': ['btceth'], 'exchange': ['kraken', 'poloniex'], 'point': '3432', 'below_above': 'below'}
+    print(request.json, flush=True)
+
+    return jsonify({'success': True})
+
+
 @app.route('/dbtest')
 def db_test():
     host = 'influxdb'
