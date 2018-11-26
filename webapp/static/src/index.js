@@ -6,7 +6,8 @@ import ReactDOM from 'react-dom';
 import { createStore } from 'redux'
 
 const reduxState = {
-  jwt_token: ''
+    jwt_token: '',
+    updateMyAlerts: false
 }
 
 function reduxReducer(state, action) {
@@ -21,8 +22,12 @@ function reduxReducer(state, action) {
           return state;
       case "TOPMENUSELECTION":
           state['topMenuSelection'] = action.selection;
-	  console.log('top menu selection dispatched selection: ' + action.selection);
+	      console.log('top menu selection dispatched selection: ' + action.selection);
 	  return state;
+      case "UPDATEMYALERTS":
+          state['updateMyAlerts'] = action.update;
+          console.log('Update my alerts updated to: ' + action.update);
+	      return state;
       default:
           console.warn('Default redux action, state not changed, action.');
           console.warn(action);
@@ -172,8 +177,11 @@ class CreateAlertPricePoint extends React.Component {
               success: (data) => {
                       console.log("Server said this on createalert: ");
                       console.log(data);
+                      reduxStore.dispatch({type: 'UPDATEMYALERTS', update: true});
                     }
         });
+
+
     }
 
     render() {
@@ -295,10 +303,10 @@ class Alerts extends React.Component {
 class App extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {number_alerts: 0, alert_notification: [], subscribed_alerts: []}
+        //this.state.updated_myalerts is to prevent infinite loop of changing redux state.
+        this.state = {number_alerts: 0, alert_notification: [], subscribed_alerts: [], logged_in: false, updated_myalerts: true}
         this.state.alert_notification.push(<List.Item>Test Alert Notification</List.Item>);
         this.state.subscribed_alerts.push(<List.Item>Test My Alert</List.Item>);
-        let logged_in = false;
 
         const socket = io('http://209.97.181.63:443/');
 
@@ -309,7 +317,7 @@ class App extends React.Component {
 
         // Only rerenders on setState not just this.state.something = whatever
         socket.on('alert', (data) => {
-            if(logged_in) {
+            if(this.state.logged_in) {
                 console.log('ALERT!!!');
                 this.state.alert_notification.push(<List.Item>{JSON.stringify(data)}</List.Item>);
                 this.setState({});
@@ -320,42 +328,71 @@ class App extends React.Component {
 
         let reduxChangedState = () => {
             if (reduxState.jwt_token) {
-                if (!logged_in) {  // On first login
-                    // Update my alerts
-                    $.ajax({
-                          type: "GET",
-                          headers: {"Authorization": "JWT " + reduxState.jwt_token, contentType: "application/json; charset=utf-8"},
-                          url: "/getsubscribedalerts",
-                          dataType: "json",
-                          success: (data) => {
-                                  this.state.subscribed_alerts.push(<List.Item>{JSON.stringify(data)}</List.Item>);
-                                  this.setState({});
-                                }
-                    });
+                if (!this.state.logged_in) {  // On first login
+                    console.log("First login updating my alerts " + this.state.logged_in);
+                    this.updateMyAlerts();
                 }
 
-                logged_in = true;
+                this.state.logged_in = true;
+                if (!this.state.updated_myalerts) {
+                    reduxStore.dispatch({type: 'UPDATEMYALERTS', update: false});
+                    this.state.updated_myalerts = true;
+                    //this.state.updated_myalerts is to prevent infinite loop of changing redux state.
+                    setTimeout(() => this.state.updated_myalerts = false, 500);  // Set
+                }
             }
 
-	    console.log('Update app state');
-	    this.setState({}); // Update state for topmenu redux update
+            if (reduxState.updateMyAlerts == true) {
+                this.updateMyAlerts();
+                if (!this.state.updated_myalerts) {
+                    reduxStore.dispatch({type: 'UPDATEMYALERTS', update: false});
+                    this.state.updated_myalerts = true;
+                    //this.state.updated_myalerts is to prevent infinite loop of changing redux state.
+                    setTimeout(() => this.state.updated_myalerts = false, 500);
+                }
+            }
+
+            console.log('Update app state');
+            this.setState({}); // Update state for topmenu redux update
         }
 
         reduxStore.subscribe(reduxChangedState);
     }
 
+    updateMyAlerts() {
+        // Update my alerts
+        if (!reduxState.jwt_token) {
+            console.warn('No JWT token set, cannot update my alerts.');
+            return;
+        }
+
+        console.log("Updating alerts");
+
+        $.ajax({
+              type: "GET",
+              headers: {"Authorization": "JWT " + reduxState.jwt_token, contentType: "application/json; charset=utf-8"},
+              url: "/getsubscribedalerts",
+              dataType: "json",
+              success: (data) => {
+                      this.state.subscribed_alerts = [];
+                      this.state.subscribed_alerts.push(<List.Item>{JSON.stringify(data)}</List.Item>);
+                      this.setState({});
+                    }
+        });
+    }
+
     render() {
-	const state_ = this.state;
-	console.log(reduxState.topMenuSelection);
-        return (
-            <React.Fragment>
-                <TopMenu number_alerts={ this.state.number_alerts} />
-		{reduxState.topMenuSelection == 'alerts' ? (
-                	<Alerts subscribed_alerts={state_.subscribed_alerts} alert_notification={state_.alert_notification}/>
-			) : null
-		}
-            </React.Fragment>
-        );
+        const state_ = this.state;
+        console.log(reduxState.topMenuSelection);
+            return (
+                <React.Fragment>
+                    <TopMenu number_alerts={ this.state.number_alerts} />
+            {reduxState.topMenuSelection == 'alerts' ? (
+                        <Alerts subscribed_alerts={state_.subscribed_alerts} alert_notification={state_.alert_notification}/>
+                ) : null
+            }
+                </React.Fragment>
+            );
     }
 }
 
