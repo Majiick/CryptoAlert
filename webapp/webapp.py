@@ -156,7 +156,22 @@ def get_subscribed_alerts():
 @jwt_required()
 def create_alert():
     # JSON Data example: {'alert': 'pricepoint', 'pair': ['btceth'], 'exchange': ['kraken', 'poloniex'], 'point': '3432', 'below_above': 'below'}
+    # TODO: Verify the data.
+    if len(request.json['pair']) > 1 or len(request.json['exchange']) > 1:
+        return jsonify({'success': False, 'error': 'More than one pair or exchange is not supported yet.'})
+
+    dir = ''
+    if request.json['below_above'] == 'below':
+        dir = 'down'
+    elif request.json['below_above'] == 'above':
+        dir = 'up'
+    else:
+        return jsonify({'success': False, 'error': 'Need to specify below or above'})
+
     print(request.json, flush=True)
+    with engine.begin() as conn:
+        s = text("insert into PRICE_POINT_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction) values (DEFAULT, :user_pk, FALSE, FALSE, :exchange, :pair, :point, :direction)")
+        conn.execute(s, user_pk=current_identity.get_id(), exchange=request.json['exchange'][0], pair=request.json['pair'][0], point=float(request.json['point']), direction=dir)
 
     return jsonify({'success': True})
 
