@@ -186,7 +186,7 @@ class CreateAlertPricePoint extends React.Component {
         const pairOptions = [
           { key: 'btcusd', text: 'BTCUSD', value: 'btcusd' },
           { key: 'btceth', text: 'BTCETH', value: 'btceth' },
-          { key: 'all', text: 'All', value: 'all' }
+          { key: '*', text: 'All', value: '*' }
         ];
 
         const belowAboveOptions = [

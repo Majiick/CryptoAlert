@@ -23,5 +23,5 @@ with engine.begin() as conn:
     for row in result:
         user_pk = row['user_pk']
 
-    s = text("insert into PRICE_POINT_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction) values (DEFAULT, :user_pk, FALSE, FALSE, '*', '*', 0.5, 'up')")
-    conn.execute(s, user_pk=user_pk)
+    # s = text("insert into PRICE_POINT_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction) values (DEFAULT, :user_pk, FALSE, FALSE, '*', '*', 0.5, 'up')")
+    # conn.execute(s, user_pk=user_pk)
