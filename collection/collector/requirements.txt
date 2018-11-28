@@ -4,3 +4,4 @@ pandas
 git+git://github.com/influxdata/influxdb-python@master
 requests
 websockets
+signalr-client-aio

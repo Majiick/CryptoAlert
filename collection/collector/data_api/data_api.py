@@ -23,8 +23,10 @@ class Exchange:
 
 
 class TradeInfo:
-    def __init__(self, exchange: Exchange, pair: Pair, buy: bool, size: float, price: float, time_received=None):
-        self.time_created = time_received or time.time_ns()
+    def __init__(self, exchange: Exchange, pair: Pair, buy: bool, size: float, price: float, timestamp=None):
+        if timestamp is not None:
+            assert(isinstance(timestamp, int))  # Nanosecond time
+        self.timestamp = timestamp or time.time_ns()
 
         assert(isinstance(exchange, Exchange))
         assert(isinstance(pair, Pair))
@@ -45,7 +47,7 @@ class TradeInfo:
         return [
                 {
                     "measurement": "trade",
-                    "time": self.time_created,
+                    "time": self.timestamp,
                     "tags": {
                         "exchange": self.exchange.name,
                         "pair": self.pair.pair,
@@ -122,9 +124,8 @@ class ContinuousDataAPI(ABC):
         zmq_socket = zmq_context.socket(zmq.PUSH)
         zmq_socket.connect("tcp://localhost:27018")
         zmq_socket.send_json(trade.get_as_json_dict())
-        print('It took {} to push trade to collector publisher'.format(time.time() - time_started_send))
         db_client.write_points(trade.get_as_json_dict())
-        print("Written trade")
+        print('It took {} to push trade to collector publisher and write to influxdb'.format(time.time() - time_started_send))
 
     @staticmethod
     @abstractmethod
