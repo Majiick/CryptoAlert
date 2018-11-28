@@ -67,8 +67,8 @@ class Cryptowatch(DataAPI):
         for exchange_and_market in json_data['result']:
             # The result has one more attribute called 'active' which is a boolean.
             # Take the result into account at a future date.
-            pair = Pair(exchange_and_market['pair'])
-            exchange = Exchange(exchange_and_market['exchange'])
+            pair = Pair(exchange_and_market['pair'], structured_properly=False)
+            exchange = Exchange(exchange_and_market['exchange'].upper())
             ret.append(DataSource(pair, exchange, Cryptowatch))
 
         return ret

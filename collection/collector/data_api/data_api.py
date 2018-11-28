@@ -1,15 +1,62 @@
 from abc import ABC, abstractmethod
 from typing import List, Type, Dict
+import time
+import zmq
+from influxdb_init import db_client
 
 
 class Pair:
-    def __init__(self, pair: str):
+    """
+    A market pair in the form of <BaseCurrency>_<MarketCurrency> all capitalized
+    """
+    def __init__(self, pair: str, structured_properly=True):
+        if structured_properly:
+            assert('_' in pair)
+            assert(pair.isupper())
         self.pair = pair
 
 
 class Exchange:
     def __init__(self, name: str):
+        assert(name.isupper() or name.isdigit())
         self.name = name
+
+
+class TradeInfo:
+    def __init__(self, exchange: Exchange, pair: Pair, buy: bool, size: float, price: float, time_received=None):
+        self.time_created = time_received or time.time_ns()
+
+        assert(isinstance(exchange, Exchange))
+        assert(isinstance(pair, Pair))
+        assert(isinstance(buy, bool))
+        assert(isinstance(size, float) or isinstance(size, int))
+        assert(isinstance(price, float) or isinstance(price, int))
+
+        self.exchange = exchange
+        self.pair = pair
+        self.buy = buy
+        self.size = size
+        self.price = price
+
+    def get_as_json_dict(self):
+        """
+        :return: Python dict object that can be interpreted as JSON and written to influxdb
+        """
+        return [
+                {
+                    "measurement": "trade",
+                    "time": self.time_created,
+                    "tags": {
+                        "exchange": self.exchange.name,
+                        "pair": self.pair.pair,
+                        "buy": self.buy
+                    },
+                    "fields": {
+                        "size": self.size,
+                        "price": self.price
+                    }
+                }
+               ]
 
 
 class DataSource:
@@ -65,6 +112,19 @@ class ContinuousDataAPI(ABC):
     @abstractmethod
     async def run_blocking(self):
         pass
+
+    @staticmethod
+    def write_trade(trade: TradeInfo):
+        assert(isinstance(trade, TradeInfo))
+
+        time_started_send = time.time()
+        zmq_context = zmq.Context()
+        zmq_socket = zmq_context.socket(zmq.PUSH)
+        zmq_socket.connect("tcp://localhost:27018")
+        zmq_socket.send_json(trade.get_as_json_dict())
+        print('It took {} to push trade to collector publisher'.format(time.time() - time_started_send))
+        db_client.write_points(trade.get_as_json_dict())
+        print("Written trade")
 
     @staticmethod
     @abstractmethod

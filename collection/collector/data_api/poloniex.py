@@ -1,4 +1,4 @@
-from data_api import DataAPI, Pair, Exchange, DataSource, ContinuousDataSource, ContinuousDataAPI
+from data_api import DataAPI, Pair, Exchange, DataSource, ContinuousDataSource, ContinuousDataAPI, TradeInfo
 from typing import List, Tuple
 import requests
 import json
@@ -39,21 +39,11 @@ WEBSOCKET_PAIRS = {'BTC_BCN': 7, 'BTC_BTS': 14, 'BTC_BURST': 15, 'BTC_CLAM': 20,
 
 WEBSOCKET_PAIRS_INVERTED = {v: k for k, v in WEBSOCKET_PAIRS.items()}
 
-# context = zmq.Context()
-# socket = context.socket(zmq.PUSH)
-# socket.bind("tcp://0.0.0.0:27018")
-# print("before")
-# socket.send_json({'wtf': 'wtf'})
-# print("after")
+
 class PoloniexWebsocket(ContinuousDataAPI):
     def __init__(self, pairs: List[Pair]):
         self.pairs = pairs
-        #self.zmq_context = zmq.Context()
-        #self.zmq_socket = self.zmq_context.socket(zmq.PUSH)
-        #self.zmq_socket.bind("tcp://0.0.0.0:27018")
-        #print('before')
-        #self.zmq_socket.send_json({'wtf': 'wtf'})
-        #print('after')
+        assert(len(self.pairs) > 0)
 
     @staticmethod
     def get_all_pairs() -> List[Pair]:
@@ -63,10 +53,6 @@ class PoloniexWebsocket(ContinuousDataAPI):
             ret.append(Pair(k))
 
         return ret
-
-    async def run(self):
-        # asyncio.ensure_future(self.run_tickers())
-        asyncio.ensure_future(self.run_orders())
 
     async def write_ticker(self, ticker_update):
         """
@@ -164,31 +150,13 @@ class PoloniexWebsocket(ContinuousDataAPI):
                 else:
                     buy = False
 
-                json_body = [
-                    {
-                        "measurement": "trade",
-                        "tags": {
-                            "exchange": "poloniex",
-                            "pair": WEBSOCKET_PAIRS_INVERTED[pair_id],
-                            "buy": buy
-                        },
-                        "time": time.time_ns(),
-                        "fields": {
-                            "size": update[4],
-                            "price": update[3]
-                        }
-                    }
-                ]
+                trade = TradeInfo(Exchange('POLONIEX'),
+                                  Pair(WEBSOCKET_PAIRS_INVERTED[pair_id]),
+                                  buy,
+                                  float(update[4]),
+                                  float(update[3]))
 
-                
-                time_started_send = time.time()
-                zmq_context = zmq.Context()
-                zmq_socket = zmq_context.socket(zmq.PUSH)
-                zmq_socket.connect("tcp://localhost:27018")
-                zmq_socket.send_json(json_body)
-                print('It took {} to push to collector publisher'.format(time.time() - time_started_send))
-                db_client.write_points(json_body)
-                print("Written trade")
+                ContinuousDataAPI.write_trade(trade)
             elif update[0] == 'o':  # New order
                 pass
                 # print('New Order')
@@ -218,6 +186,10 @@ class PoloniexWebsocket(ContinuousDataAPI):
                 # print('Initial dump')
             else:
                 await self.write_order_update(data[2], data[0])
+
+    async def run(self):
+        # asyncio.ensure_future(self.run_tickers())
+        asyncio.ensure_future(self.run_orders())
 
     def run_blocking(self):
         loop = asyncio.get_event_loop()

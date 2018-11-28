@@ -17,9 +17,8 @@ class PricePoint(Alert):
         self.point = point
         self.direction = direction
 
-    # TODO: Have a common interface for passing in continuous data
     def trigger(self, trade) -> bool:
-        if (trade['tags']['pair'] == self.pair or self.pair == '*') and (trade['tags']['exchange'] == self.exchange or self.exchange == '*'):
+        if (trade['tags']['pair'].lower() == self.pair.lower() or self.pair == '*') and (trade['tags']['exchange'].lower() == self.exchange.lower() or self.exchange == '*'):
             if self.direction == 'up':
                 if float(trade['fields']['price']) > self.point:
                     return True
