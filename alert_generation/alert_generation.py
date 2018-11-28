@@ -28,8 +28,10 @@ while True:
 
         for alert in alerts:
             print(alert.__dict__)
-            if alert.trigger(json[0]):
-                print('pp fired off')
-                pub.send_json({'measurement': 'alert', 'alert': 'price_point', 'price_point': alert.__dict__, 'trade': json[0]})
+            if not alert.fulfilled or alert.repeat:
+                if alert.trigger(json[0]):
+                    print('pp fired off')
+                    pub.send_json({'measurement': 'alert', 'alert': 'price_point', 'price_point': alert.__dict__, 'trade': json[0]})
+                    alert.mark_fulfilled()
 
 

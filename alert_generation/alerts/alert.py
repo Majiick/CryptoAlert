@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Type, Dict
+from postgresql_init import engine
+from sqlalchemy.sql import text
+
 
 class Alert(ABC):
     @abstractmethod
@@ -12,6 +15,12 @@ class Alert(ABC):
     @abstractmethod
     def trigger(self) -> bool:
         pass
+
+    def mark_fulfilled(self):
+        self.fulfilled = True
+
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE ALERT SET fulfilled=TRUE WHERE alert_pk=:alert_pk"), alert_pk=self.alert_pk)
 
     @staticmethod
     @abstractmethod
