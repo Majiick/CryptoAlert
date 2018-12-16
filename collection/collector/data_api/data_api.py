@@ -27,6 +27,7 @@ class TradeInfo:
         if timestamp is not None:
             assert(isinstance(timestamp, int))  # Nanosecond time
         self.timestamp = timestamp or time.time_ns()
+        assert(self.timestamp > int(time.time() - 86400) * int(float('1e+9')))  # Check if timestamp is in nanoseconds and not more than one day old
 
         assert(isinstance(exchange, Exchange))
         assert(isinstance(pair, Pair))
@@ -47,7 +48,7 @@ class TradeInfo:
         return [
                 {
                     "measurement": "trade",
-                    "time": self.timestamp,
+                    "time": int(self.timestamp),
                     "tags": {
                         "exchange": self.exchange.name,
                         "pair": self.pair.pair,
@@ -124,7 +125,7 @@ class ContinuousDataAPI(ABC):
         zmq_socket = zmq_context.socket(zmq.PUSH)
         zmq_socket.connect("tcp://localhost:27018")
         zmq_socket.send_json(trade.get_as_json_dict())
-        db_client.write_points(trade.get_as_json_dict())
+        assert(db_client.write_points(trade.get_as_json_dict(), time_precision='n'))
         print('It took {} to push trade to collector publisher and write to influxdb'.format(time.time() - time_started_send))
 
     @staticmethod
