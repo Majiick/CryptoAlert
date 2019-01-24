@@ -5,6 +5,12 @@
 version: '3'
 
 services:
+        logging:
+                build:
+                        args:
+                                - HOST_DOCKERFILE_DIR=/common/logging/
+                        context: .
+                        dockerfile: ./common/logging/Dockerfile
         webapp:
                 build:
                         args:
