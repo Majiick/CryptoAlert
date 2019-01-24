@@ -6,48 +6,32 @@ version: '3'
 
 services:
         webapp:
-                build: ./webapp/
+                build:
+                        args:
+                                - HOST_DOCKERFILE_DIR=/webapp/
+                        context: .
+                        dockerfile: ./webapp/Dockerfile
                 volumes:
                         - run-volume:/run
                         - static-volume:/code/static/
         collector-orchestrator:
-                build: ./collection/
+                build:
+                        args:
+                                - HOST_DOCKERFILE_DIR=/collection/
+                        context: .
+                        dockerfile: ./collection/Dockerfile
         collector:
-                build: ./collection/collector/
-        postgres:
-                image: "postgres"
-                # restart: always
-                environment:
-                        - POSTGRES_PASSWORD:password
-                volumes:
-                        - postgres-data:/var/lib/postgresql/data
-                ports:
-                        - "5432:5432"
-        influxdb:
-                image: "influxdb"
-                ports:
-                        - "8086:8086"
-                volumes:
-                        - influx-data:/var/lib/influxdb
-
-        nginx:
-                image: "nginx"
-                volumes:
-                        - ./webapp/nginx.conf:/etc/nginx/nginx.conf
-                        - run-volume:/run
-                        - static-volume:/code/static/
-                ports:
-                        - "80:80"
-                        #  - "443:443"
-        grafana:
-                image: "grafana/grafana"
-                volumes:
-                        - ./grafana/grafana.ini:/etc/grafana/grafana.ini
-                        - grafana-data:/var/lib/grafana
-                ports:
-                        - "3000:3000"
+                build:
+                        args:
+                        - HOST_DOCKERFILE_DIR=/collection/collector/
+                        context: .
+                        dockerfile: ./collection/collector/Dockerfile
         alert_generation:
-                build: ./alert_generation/
+                build: 
+                        args:
+                                - HOST_DOCKERFILE_DIR=/alert_generation/
+                        context: .
+                        dockerfile: ./alert_generation/Dockerfile
         socketio_server:
                 build:
                         args:
@@ -56,6 +40,38 @@ services:
                         dockerfile: ./alert_generation/socketio_server/Dockerfile
                 ports:
                         - "443:443"
+        postgres:
+                image: "postgres"
+                # restart: always
+                environment:
+                - POSTGRES_PASSWORD:password
+                volumes:
+                - postgres-data:/var/lib/postgresql/data
+                ports:
+                - "5432:5432"
+        influxdb:
+                image: "influxdb"
+                ports:
+                - "8086:8086"
+                volumes:
+                - influx-data:/var/lib/influxdb
+
+        nginx:
+                image: "nginx"
+                volumes:
+                - ./webapp/nginx.conf:/etc/nginx/nginx.conf
+                - run-volume:/run
+                - static-volume:/code/static/
+                ports:
+                - "80:80"
+                #  - "443:443"
+        grafana:
+                image: "grafana/grafana"
+                volumes:
+                - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+                - grafana-data:/var/lib/grafana
+                ports:
+                - "3000:3000"
 
 volumes:
         run-volume:  # To share the gunicorn sock

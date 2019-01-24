@@ -1,11 +1,13 @@
 FROM python:3.7
-COPY ./requirements.txt .
-COPY ./collector/requirements.txt collector_requirements.txt
+ARG HOST_DOCKERFILE_DIR
+
+COPY $HOST_DOCKERFILE_DIR/requirements.txt .
+COPY $HOST_DOCKERFILE_DIR/collector/requirements.txt collector_requirements.txt
 RUN pip install -r requirements.txt
 RUN pip install -r collector_requirements.txt
 RUN pip install mypy
 
-ADD . /code
+ADD $HOST_DOCKERFILE_DIR /code
 WORKDIR /code
 ENV PYTHONPATH "${PYTHONPATH}:/code"
 ENV PYTHONPATH "${PYTHONPATH}:/code/collector"
