@@ -6,6 +6,7 @@
 
 # TODO: The workers use PUSH to push the data here. The PUSH is blocking. Need to change this no a non-blocking push type such as an interprocess queue or something else.
 import zmq
+import mlogging
 
 def run():
     print('Running collector publisher')

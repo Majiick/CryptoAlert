@@ -5,79 +5,113 @@
 version: '3'
 
 services:
-        logging:
-                build:
-                        args:
-                                - HOST_DOCKERFILE_DIR=/common/logging/
-                        context: .
-                        dockerfile: ./common/logging/Dockerfile
-        webapp:
-                build:
-                        args:
-                                - HOST_DOCKERFILE_DIR=/webapp/
-                        context: .
-                        dockerfile: ./webapp/Dockerfile
-                volumes:
-                        - run-volume:/run
-                        - static-volume:/code/static/
-        collector-orchestrator:
-                build:
-                        args:
-                                - HOST_DOCKERFILE_DIR=/collection/
-                        context: .
-                        dockerfile: ./collection/Dockerfile
-        collector:
-                build:
-                        args:
-                        - HOST_DOCKERFILE_DIR=/collection/collector/
-                        context: .
-                        dockerfile: ./collection/collector/Dockerfile
-        alert_generation:
-                build: 
-                        args:
-                                - HOST_DOCKERFILE_DIR=/alert_generation/
-                        context: .
-                        dockerfile: ./alert_generation/Dockerfile
-        socketio_server:
-                build:
-                        args:
-                                - HOST_DOCKERFILE_DIR=/alert_generation/socketio_server/ 
-                        context: .
-                        dockerfile: ./alert_generation/socketio_server/Dockerfile
-                ports:
-                        - "443:443"
-        postgres:
-                image: "postgres"
-                # restart: always
-                environment:
-                - POSTGRES_PASSWORD:password
-                volumes:
-                - postgres-data:/var/lib/postgresql/data
-                ports:
-                - "5432:5432"
-        influxdb:
-                image: "influxdb"
-                ports:
-                - "8086:8086"
-                volumes:
-                - influx-data:/var/lib/influxdb
+#        webapp:
+#                build:
+#                        args:
+#                                - HOST_DOCKERFILE_DIR=/webapp/
+#                        context: .
+#                        dockerfile: ./webapp/Dockerfile
+#                volumes:
+#                        - run-volume:/run
+#                        - static-volume:/code/static/
+#        collector-orchestrator:
+#                build:
+#                        args:
+#                                - HOST_DOCKERFILE_DIR=/collection/
+#                        context: .
+#                        dockerfile: ./collection/Dockerfile
+#        collector:
+#                build:
+#                        args:
+#                                - HOST_DOCKERFILE_DIR=/collection/collector/
+#                        context: .
+#                        dockerfile: ./collection/collector/Dockerfile
+#        alert_generation:
+#                build:
+#                        args:
+#                                - HOST_DOCKERFILE_DIR=/alert_generation/
+#                        context: .
+#                        dockerfile: ./alert_generation/Dockerfile
+#        socketio_server:
+#                build:
+#                        args:
+#                                - HOST_DOCKERFILE_DIR=/alert_generation/socketio_server/
+#                        context: .
+#                        dockerfile: ./alert_generation/socketio_server/Dockerfile
+#                ports:
+#                        - "443:443"
+#        postgres:
+#                image: "postgres"
+#                # restart: always
+#                environment:
+#                        - POSTGRES_PASSWORD:password
+#                volumes:
+#                        - postgres-data:/var/lib/postgresql/data
+#                ports:
+#                        - "5432:5432"
+#        influxdb:
+#                image: "influxdb"
+#                ports:
+#                        - "8086:8086"
+#                volumes:
+#                        - influx-data:/var/lib/influxdb
+#
+#        nginx:
+#                image: "nginx"
+#                volumes:
+#                        - ./webapp/nginx.conf:/etc/nginx/nginx.conf
+#                        - run-volume:/run
+#                        - static-volume:/code/static/
+#                ports:
+#                        - "80:80"
+#                        #  - "443:443"
+#        grafana:
+#                image: "grafana/grafana"
+#                volumes:
+#                        - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+#                        - grafana-data:/var/lib/grafana
+#                ports:
+#                        - "3000:3000"
 
-        nginx:
-                image: "nginx"
+        #####################
+        ### GRAYLOG START ###
+        #####################
+        mongo:
+                image: "mongo:3"
+                #volumes:
+                        #- mongo:/data/db
+        elasticsearch:
+                image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.5.4
+                environment:
+                        - http.host=0.0.0.0
+                        - transport.host=localhost
+                        - network.host=0.0.0.0
+                        - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+                #volumes:
+                        #- elasticsearch:/usr/share/elasticsearch/data
+        graylog:
+                #image: graylog/graylog:3.0.0-beta.3-1
+                image: graylog/graylog:2.5
                 volumes:
-                - ./webapp/nginx.conf:/etc/nginx/nginx.conf
-                - run-volume:/run
-                - static-volume:/code/static/
+                        - ./graylog/data/journal:/usr/share/graylog/data/journal
+                        - ./graylog/config:/usr/share/graylog/data/config
+                #environment:
+                        #GRAYLOG_PASSWORD_SECRET: senhadeexemplo123123123123
+                        #GRAYLOG_ROOT_PASSWORD_SHA2: fec576ecc231a923f56df2b8695df21087324a951fc1beff2af9a42d3bb6f9d1
+                        #GRAYLOG_WEB_ENDPOINT_URI: http://0.0.0.0:9000/api/
+                        #GRAYLOG_HTTP_BIND_ADDRESS: 0.0.0.0:9000  # Graylog 3
+                depends_on:
+                        - mongo
+                        - elasticsearch
                 ports:
-                - "80:80"
-                #  - "443:443"
-        grafana:
-                image: "grafana/grafana"
-                volumes:
-                - ./grafana/grafana.ini:/etc/grafana/grafana.ini
-                - grafana-data:/var/lib/grafana
-                ports:
-                - "3000:3000"
+                        - "9000:9000" # Graylog frontend
+                        - "9001:9001" # Graylog REST api
+                        - "12201:12201"
+                        - "1514:1514"
+                        - "514:514/udp"
+        #####################
+        ### GRAYLOG END #####
+        #####################
 
 volumes:
         run-volume:  # To share the gunicorn sock
@@ -85,3 +119,5 @@ volumes:
         influx-data:  # To persist influx db
         static-volume: # To share the static files for Flask with Nginx
         postgres-data: # To persist postgre db
+        elasticsearch:
+        mongo: 

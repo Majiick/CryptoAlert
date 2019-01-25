@@ -1,2 +1,5 @@
 webapp/static/node_modules/
 webapp/static/package-lock.json
+graylog/data/
+.elasticsearch/
+.mongo/
