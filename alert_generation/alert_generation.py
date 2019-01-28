@@ -3,8 +3,9 @@ import zmq
 from price_point import PricePoint
 from alert import Alert
 from typing import List, Type, Dict
+from mlogging import logger
 
-print("Started alert generation")
+logger.info("Started alert generation")
 
 context = zmq.Context()
 workers_socket = context.socket(zmq.SUB)  # Subs to collector_publisher PUB socket.
@@ -21,7 +22,7 @@ while True:
     alerts: List[Alert] = []
     alerts.extend(PricePoint.get_all_from_db())
     json = workers_socket.recv_json()
-    print(json)
+    logger.debug('Alert generation received new point: ' + str(json))
 
     if json[0]['measurement'] == 'trade':
         pub.send_json({'measurement': 'latest_price', 'exchange': json[0]['tags']['exchange'], 'pair': json[0]['tags']['pair'], 'price': json[0]['fields']['price']})

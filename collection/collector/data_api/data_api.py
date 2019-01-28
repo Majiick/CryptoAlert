@@ -3,6 +3,7 @@ from typing import List, Type, Dict
 import time
 import zmq
 from influxdb_init import db_client
+from mlogging import logger
 
 
 class Pair:
@@ -126,7 +127,12 @@ class ContinuousDataAPI(ABC):
         zmq_socket.connect("tcp://localhost:27018")
         zmq_socket.send_json(trade.get_as_json_dict())
         assert(db_client.write_points(trade.get_as_json_dict(), time_precision='n'))
-        print('It took {} to push trade to collector publisher and write to influxdb'.format(time.time() - time_started_send))
+
+        time_to_write = time.time() - time_started_send
+        if time_to_write > 0.1:
+            logger.warning('It took {} to push trade to collector publisher and write to influxdb'.format(time_to_write))
+        else:
+            logger.info('It took {} to push trade to collector publisher and write to influxdb'.format(time_to_write))
 
     @staticmethod
     @abstractmethod

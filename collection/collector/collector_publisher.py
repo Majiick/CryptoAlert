@@ -6,10 +6,11 @@
 
 # TODO: The workers use PUSH to push the data here. The PUSH is blocking. Need to change this no a non-blocking push type such as an interprocess queue or something else.
 import zmq
-import mlogging
+from mlogging import logger
+
 
 def run():
-    print('Running collector publisher')
+    logger.info('Running collector publisher')
     context = zmq.Context()
     pub = context.socket(zmq.PUB)
     pub.bind('tcp://0.0.0.0:27999')
@@ -19,6 +20,5 @@ def run():
 
     while True:
         msg = pull.recv()
-        mlogging.log(msg)
-        print('Collector publisher received msg ' + str(msg))
+        logger.debug('Collector publisher received msg ' + str(msg))
         pub.send(msg)

@@ -6,6 +6,7 @@ from multiprocessing import Process
 from typing import Type
 from data_api import ContinuousDataAPI
 from data_source import continuous_data_apis
+from mlogging import logger
 
 def main():
     # Start the collector_publisher
@@ -20,7 +21,7 @@ def main():
     processes = []
     while True:
         command = startup_channel.recv_json()
-        print('collector_starter received new command {}'.format(command))
+        logger.info('collector_starter received new command {}'.format(command))
 
         if command['command'] == 'start_continuous':
             assert(command['target'] in continuous_data_apis)
