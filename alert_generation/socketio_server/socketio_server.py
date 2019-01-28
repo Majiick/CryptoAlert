@@ -4,8 +4,9 @@ import socketio
 import zmq
 import threading
 from aiohttp import web
+from mlogging import logger
 
-print("Started socketio server")
+logger.info("Started socketio server")
 
 app = web.Application()
 sio = socketio.Server(async_mode='eventlet')
@@ -13,7 +14,7 @@ sio = socketio.Server(async_mode='eventlet')
 
 @sio.on('connect', namespace='/price_update')
 def connect(sid, environ):
-    print("connect ", sid)
+    logger.info("connect ", sid)
     sio.emit('price_update', {'data': 'Connection established.'}, namespace='/price_update')
 
 

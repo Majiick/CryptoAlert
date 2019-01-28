@@ -8,6 +8,7 @@ from data_api import ContinuousDataAPI
 from data_source import continuous_data_apis
 from mlogging import logger
 
+
 def main():
     # Start the collector_publisher
     p = Process(target=collector_publisher.run)

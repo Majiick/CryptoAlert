@@ -1,6 +1,7 @@
 from influxdb import InfluxDBClient
 import requests
 import time
+from mlogging import logger
 
 def create_client():
     host = 'influxdb'

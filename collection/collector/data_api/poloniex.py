@@ -8,6 +8,7 @@ import time
 import zmq
 from influxdb import InfluxDBClient
 from influxdb_init import db_client
+from mlogging import logger
 
 
 WEBSOCKET_PAIRS = {'BTC_BCN': 7, 'BTC_BTS': 14, 'BTC_BURST': 15, 'BTC_CLAM': 20,
@@ -87,7 +88,7 @@ class PoloniexWebsocket(ContinuousDataAPI):
 
         db_client.create_retention_policy('retention_policy', '3d', 3, default=True)
         db_client.write_points(json_body)
-        print("Written ticker update")
+        logger.debug("Written ticker update")
 
     async def run_tickers(self):
         websocket = await websockets.connect('wss://api2.poloniex.com')

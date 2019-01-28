@@ -10,6 +10,7 @@ import sys
 from data_api import DataAPI, Pair, Exchange, DataSource, ContinuousDataSource, ContinuousDataAPI, TradeInfo
 import math
 import time
+from mlogging import logger
 
 
 class BittrexWebsockets():

@@ -3,6 +3,7 @@ import pandas as pd
 from influxdb import DataFrameClient
 import threading
 from data_source import continuous_data_apis
+from mlogging import logger
 
 
 def startup_queue():

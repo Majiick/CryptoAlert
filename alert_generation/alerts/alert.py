@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Type, Dict
 from postgresql_init import engine
 from sqlalchemy.sql import text
+from mlogging import logger
 
 
 class Alert(ABC):

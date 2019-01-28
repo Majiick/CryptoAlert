@@ -2,6 +2,8 @@ from data_api import DataAPI, Pair, Exchange, DataSource
 from typing import List, Tuple
 import requests
 import json
+from mlogging import logger
+
 
 class Cryptowatch(DataAPI):
     @staticmethod
@@ -32,28 +34,28 @@ class Cryptowatch(DataAPI):
             earliest_time = end_time
 
             while earliest_time > start_time:
-                print('Period: {}'.format(cur_period))
-                print('Earliest time: {}'.format(earliest_time))
+                logger.debug('Period: {}'.format(cur_period))
+                logger.debug('Earliest time: {}'.format(earliest_time))
                 params = {'before': earliest_time + 1, 'periods': cur_period}
                 r = requests.get('https://api.cryptowat.ch/markets/{}/{}/ohlc'.format(exchange.name, pair.pair),
                                  params=params)
                 json_data = json.loads(r.content)
-                print(json_data['allowance'])
+                logger.debug(json_data['allowance'])
 
                 if json_data['result'][str(cur_period)]:
-                    print(len(json_data['result'][str(cur_period)]))
+                    logger.debug(len(json_data['result'][str(cur_period)]))
 
                     new_earliest_time = end_time
                     for ohlc in json_data['result'][str(cur_period)]:
                         new_earliest_time = min(new_earliest_time, int(ohlc[0]))
 
                     if earliest_time == new_earliest_time:
-                        print('No more results')
+                        logger.debug('No more results')
                         break
                     else:
                         earliest_time = new_earliest_time
                 else:
-                    print('No result at earliest_time {}'.format(earliest_time))
+                    logger.debug('No result at earliest_time {}'.format(earliest_time))
                     break
 
 

@@ -2,6 +2,7 @@ import sqlalchemy
 import psycopg2
 import time
 from sqlalchemy.sql import text
+from mlogging import logger
 
 file = open('postgresql_init.sql')
 engine = sqlalchemy.create_engine('postgresql+psycopg2://postgres:password@postgres')

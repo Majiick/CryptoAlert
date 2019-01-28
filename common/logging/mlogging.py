@@ -1,14 +1,37 @@
+# This module does all of the logging for every one of the python files.
+# It MUST be included since it catches and logs uncaught exceptions by overriding the exception sys hook.
 import logging
 import graypy
 import sys
 
 
+#####################################################################################################################################################################
+######################################## CHANGE STD_MID_LEVEL FOR ALL PRINTS TO GO TO STDOUT ########################################################################
+#####################################################################################################################################################################
+STD_MIN_LEVEL = logging.DEBUG
+#STD_MIN_LEVEL = logging.WARN
+
+
+# Override uncaught exception handler
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    logger.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+
+
+sys.excepthook = handle_exception
+
+
 class LogFilter(logging.Filter):
+    '''Filter anything above a certain level'''
     def __init__(self, level):
         self.level = level
 
     def filter(self, record):
         return record.levelno < self.level
+
 
 logger = logging.getLogger('mlogger')
 logger.setLevel(logging.DEBUG)
@@ -25,13 +48,6 @@ stderr_handler = logging.StreamHandler(sys.stderr)
 stdout_handler.setFormatter(formatter)
 stderr_handler.setFormatter(formatter)
 
-
-
-#####################################################################################################################################################################
-######################################## CHANGE STD_MID_LEVEL FOR ALL PRINTS TO GO TO STDOUT ########################################################################
-#####################################################################################################################################################################
-#STD_MIN_LEVEL = logging.DEBUG
-STD_MIN_LEVEL = logging.WARN
 
 log_filter = LogFilter(logging.WARN)
 stdout_handler.setLevel(STD_MIN_LEVEL)

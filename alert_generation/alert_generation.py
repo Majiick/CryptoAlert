@@ -28,10 +28,10 @@ while True:
         pub.send_json({'measurement': 'latest_price', 'exchange': json[0]['tags']['exchange'], 'pair': json[0]['tags']['pair'], 'price': json[0]['fields']['price']})
 
         for alert in alerts:
-            print(alert.__dict__)
+            logger.debug(alert.__dict__)
             if not alert.fulfilled or alert.repeat:
                 if alert.trigger(json[0]):
-                    print('pp fired off')
+                    logger.info('pp fired off')
                     pub.send_json({'measurement': 'alert', 'alert': 'price_point', 'price_point': alert.__dict__, 'trade': json[0]})
                     alert.mark_fulfilled()
 

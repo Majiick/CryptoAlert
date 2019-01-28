@@ -5,6 +5,7 @@ import time
 from postgresql_init import engine
 from sqlalchemy.sql import text
 from typing import List, Type, Dict
+from mlogging import logger
 
 
 class PricePoint(Alert):

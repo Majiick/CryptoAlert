@@ -4,6 +4,7 @@ from typing import List, Dict, Type
 from data_api import DataSource, Pair, Exchange, ContinuousDataAPI
 from poloniex import PoloniexWebsocket
 from bittrex import BittrexWebsockets
+from mlogging import logger
 
 # Example structure for DataSource
 # pair btcusd:
