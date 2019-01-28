@@ -19,5 +19,6 @@ def run():
 
     while True:
         msg = pull.recv()
+        mlogging.log(msg)
         print('Collector publisher received msg ' + str(msg))
         pub.send(msg)
