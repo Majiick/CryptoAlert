@@ -12,5 +12,5 @@ COPY /common/logging/ /code
 WORKDIR /code
 ENV PYTHONPATH "${PYTHONPATH}:/code"
 
-RUN mypy --ignore-missing-imports socketio_server.py 
+RUN mypy --ignore-missing-imports *.py
 CMD ["python", "-u", "socketio_server.py"]

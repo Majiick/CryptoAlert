@@ -10,4 +10,4 @@ WORKDIR /code
 ENV PYTHONPATH "${PYTHONPATH}:/code"
 
 ENV PYTHONBUFFERED=0
-RUN mypy --ignore-missing-imports mlogging.py
+RUN mypy --ignore-missing-imports *.py

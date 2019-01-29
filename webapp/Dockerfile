@@ -29,7 +29,7 @@ WORKDIR /code
 # EXPOSE 4000/tcp
 # Python buffered so Gunicorn python prints
 ENV PYTHONUNBUFFERED=0
-RUN mypy --ignore-missing-imports webapp.py
+RUN mypy --ignore-missing-imports *.py
 # Stdio inheritance so that gunicorn python prints
 CMD ["gunicorn", "-w", "1", "--enable-stdio-inheritance", "-b", "unix:/run/gunicorn.sock", "webapp:app"]
 # CMD ["python", "-m", "flask", "run"]
