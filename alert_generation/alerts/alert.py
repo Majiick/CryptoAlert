@@ -14,7 +14,7 @@ class Alert(ABC):
         self.repeat = None
 
     @abstractmethod
-    def trigger(self) -> bool:
+    def trigger(self, trade) -> bool:
         pass
 
     def mark_fulfilled(self):

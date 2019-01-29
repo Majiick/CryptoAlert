@@ -13,5 +13,6 @@ WORKDIR /code
 ENV PYTHONPATH "${PYTHONPATH}:/code"
 ENV PYTHONPATH "${PYTHONPATH}:/code/alerts"
 
-RUN mypy --ignore-missing-imports alert_generation.py 
+RUN mypy --ignore-missing-imports *.py
+RUN mypy --ignore-missing-imports ./alerts/*.py 
 CMD ["python", "-u", "alert_generation.py"]

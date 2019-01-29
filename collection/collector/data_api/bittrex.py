@@ -5,7 +5,7 @@ from zlib import decompress, MAX_WBITS
 import json
 import asyncio
 import requests
-from typing import List, Type, Dict
+from typing import List, Type, Dict, Any
 import sys
 from data_api import DataAPI, Pair, Exchange, DataSource, ContinuousDataSource, ContinuousDataAPI, TradeInfo
 import math
@@ -13,7 +13,7 @@ import time
 from mlogging import logger
 
 
-class BittrexWebsockets():
+class BittrexWebsockets(ContinuousDataAPI):
     def __init__(self, pairs: List[Pair]):
         self.pairs = pairs
         assert(len(self.pairs) > 0)
@@ -23,10 +23,10 @@ class BittrexWebsockets():
         r = requests.get('https://api.bittrex.com/api/v1.1/public/getmarkets')
         r = r.json()
 
-        assert(r['success'])
+        assert(r['success'])  # type: ignore
 
         ret = []
-        for market in r['result']:
+        for market in r['result']:  # type: ignore
             if market['IsActive'] and not market['IsRestricted']:
                 ret.append(Pair(market['MarketName'].replace('-', '_')))
 

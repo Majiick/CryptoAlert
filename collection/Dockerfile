@@ -16,5 +16,5 @@ ENV PYTHONPATH "${PYTHONPATH}:/code"
 ENV PYTHONPATH "${PYTHONPATH}:/code/collector"
 ENV PYTHONPATH "${PYTHONPATH}:/code/collector/data_api"
 
-RUN mypy --ignore-missing-imports collector_orchestrator.py 
+RUN mypy --ignore-missing-imports *.py 
 CMD ["python", "-u", "collector_orchestrator.py"]

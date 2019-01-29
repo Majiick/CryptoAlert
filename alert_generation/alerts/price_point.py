@@ -31,7 +31,7 @@ class PricePoint(Alert):
 
     @staticmethod
     def get_all_from_db() -> List[Alert]:
-        ret = []
+        ret: List[Alert] = []
 
         with engine.begin() as conn:
             result = conn.execute("select * from PRICE_POINT_ALERT WHERE fulfilled = FALSE")
