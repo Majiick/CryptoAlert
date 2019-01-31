@@ -12,7 +12,9 @@ COPY /common/logging/ /code
 WORKDIR /code
 ENV PYTHONPATH "${PYTHONPATH}:/code"
 ENV PYTHONPATH "${PYTHONPATH}:/code/alerts"
+ENV PYTHONPATH "${PYTHONPATH}:/code/notifications"
 
 RUN mypy --ignore-missing-imports *.py
-RUN mypy --ignore-missing-imports ./alerts/*.py 
+RUN mypy --ignore-missing-imports ./alerts/*.py
+RUN mypy --ignore-missing-imports ./notifications/*.py
 CMD ["python", "-u", "alert_generation.py"]

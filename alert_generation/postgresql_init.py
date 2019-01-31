@@ -15,10 +15,13 @@ except sqlalchemy.exc.OperationalError:
     engine.execute(escaped_sql)
 
 with engine.begin() as conn:
+    ### TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY
+    ############################################################################################################################
     try:
-        conn.execute("insert into REGISTERED_USER (user_pk, user_name, password, email) values (DEFAULT, 'Ecoste', 'password', 'mail@mail.com')")
+        conn.execute("insert into REGISTERED_USER (user_pk, user_name, password, email) values (DEFAULT, 'Ecoste', 'password', 'ecostequse@gmail.com')")
     except sqlalchemy.exc.IntegrityError:  # User already exists
         pass
+    ############################################################################################################################
 
     result = conn.execute("select user_pk from REGISTERED_USER")
     for row in result:

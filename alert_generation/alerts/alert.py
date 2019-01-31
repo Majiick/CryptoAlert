@@ -15,6 +15,8 @@ class Alert(ABC):
 
     @abstractmethod
     def trigger(self, trade) -> bool:
+        """ Call this to find out if the alert triggers or not on the passed in trade.
+        """
         pass
 
     def mark_fulfilled(self):
