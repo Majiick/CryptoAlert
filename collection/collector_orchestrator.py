@@ -84,7 +84,7 @@ def message_rate_calculation():
             # Add exchanges that are running if we didn't receive any messages from them.
             for exchange_name, _ in continuous_data_apis.items():
                 if exchange_name not in rates:
-                    rates[rates] = 0
+                    rates[exchange_name] = 0
 
             for exchange, messages in rates.items():
                 if messages == 0:

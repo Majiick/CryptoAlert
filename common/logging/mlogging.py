@@ -3,14 +3,31 @@
 import logging
 import graypy
 import sys
-
+import threading
 
 #####################################################################################################################################################################
 ######################################## CHANGE STD_MID_LEVEL FOR ALL PRINTS TO GO TO STDOUT ########################################################################
 #####################################################################################################################################################################
 STD_MIN_LEVEL = logging.DEBUG
 #STD_MIN_LEVEL = logging.WARN
+# STD_MIN_LEVEL = logging.ERROR
 
+
+# There is a Python bug where threads do not use the sys.excepthook https://bugs.python.org/issue1230540
+# I am using a work around from that thread.
+init_old = threading.Thread.__init__
+def init(self, *args, **kwargs):
+    init_old(self, *args, **kwargs)
+    run_old = self.run
+    def run_with_except_hook(*args, **kw):
+        try:
+            run_old(*args, **kw)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:
+            sys.excepthook(*sys.exc_info())
+    self.run = run_with_except_hook
+threading.Thread.__init__ = init  # type: ignore
 
 # Override uncaught exception handler
 def handle_exception(exc_type, exc_value, exc_traceback):
@@ -18,9 +35,9 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
 
+    for _ in range(100):
+        print('lol')
     logger.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
-
-
 sys.excepthook = handle_exception
 
 

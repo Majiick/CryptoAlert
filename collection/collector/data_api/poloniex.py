@@ -8,7 +8,11 @@ import time
 import zmq
 from influxdb import InfluxDBClient
 from influxdb_init import db_client
+import mlogging
 from mlogging import logger
+import sys
+import traceback
+
 
 
 WEBSOCKET_PAIRS = {'BTC_BCN': 7, 'BTC_BTS': 14, 'BTC_BURST': 15, 'BTC_CLAM': 20,
@@ -190,7 +194,15 @@ class PoloniexWebsocket(ContinuousDataAPI):
 
     async def run(self):
         # asyncio.ensure_future(self.run_tickers())
-        asyncio.ensure_future(self.run_orders())
+        while True:
+            try:
+                logger.info('Running continuous worker {}'.format(str(type(self).__name__)))
+                task = asyncio.ensure_future(self.run_orders())
+                await task
+            except Exception as e:
+                logger.critical(traceback.format_exc())
+                logger.critical("Continuous worker failed: {}".format(str(e)))
+                continue
 
     def run_blocking(self):
         loop = asyncio.get_event_loop()
