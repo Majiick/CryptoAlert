@@ -170,8 +170,14 @@ def create_alert():
 
     print(request.json, flush=True)
     with engine.begin() as conn:
-        s = text("insert into PRICE_POINT_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction) values (DEFAULT, :user_pk, FALSE, FALSE, :exchange, :pair, :point, :direction)")
-        conn.execute(s, user_pk=current_identity.get_id(), exchange=request.json['exchange'][0], pair=request.json['pair'][0], point=float(request.json['point']), direction=dir)
+        s = text("insert into PRICE_POINT_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction) values (DEFAULT, :user_pk, FALSE, FALSE, :exchange, :pair, :point, :direction) RETURNING alert_pk")
+        cursor = conn.execute(s, user_pk=current_identity.get_id(), exchange=request.json['exchange'][0], pair=request.json['pair'][0], point=float(request.json['point']), direction=dir)
+        created_alert_pk = cursor.fetchone()[0]
+
+        # TEMPORARY TEMPORARY
+        #################################################################################################################
+        s = text("INSERT INTO EMAIL_NOTIFICATION (notification_pk, notify_on_which_alert, user_to_notify) VALUES (DEFAULT, :alert_pk, :user_pk)")
+        conn.execute(s, alert_pk=created_alert_pk, user_pk=current_identity.get_id())
 
     return jsonify({'success': True})
 

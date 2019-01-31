@@ -13,20 +13,23 @@ class EmailNotification(Notification):
 
     def notify(self):
         with engine.begin() as conn:
-            result = conn.execute("SELECT * FROM REGISTERED_USER WHERE user_pk=:user_to_notify", user_to_notify=self.user_to_notify)
+            s = text("SELECT * FROM REGISTERED_USER WHERE user_pk=:user_to_notify")
+            result = conn.execute(s, user_to_notify=self.user_to_notify)
 
             for row in result:
                 email = row['email']
-                send_email(email)
+                logger.info('Sending email notification to email {}'.format(email))
+                EmailNotification.send_email(email)
 
 
     @staticmethod
-    def get_all_from_db(alert_pk: int) -> List['Notification']:
+    def get_all_from_db(alert_pk: int) -> List[Notification]:
         ret: List[Notification] = []
 
         with engine.begin() as conn:
-            result = conn.execute("select * from EMAIL_NOTIFICATION WHERE notify_on_which_alert = :notify_on_which_alert",
-                                  notify_on_which_alert=alert_pk)
+            s = text("select * from EMAIL_NOTIFICATION WHERE notify_on_which_alert = :notify_on_which_alert")
+            result = conn.execute(s, notify_on_which_alert=alert_pk)
+            
             for row in result:
                 notification = EmailNotification(row['user_to_notify'])
                 notification.notification_pk = row['notification_pk']

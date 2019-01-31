@@ -4,6 +4,7 @@ from price_point import PricePoint
 from alert import Alert
 from typing import List, Type, Dict
 from mlogging import logger
+from email_notification import EmailNotification
 
 logger.info("Started alert generation")
 
@@ -15,8 +16,8 @@ workers_socket.connect('tcp://collector:27999')
 # We may subscribe to several filters, thus receiving from all.
 workers_socket.setsockopt_string(zmq.SUBSCRIBE, '')
 
-pub = context.socket(zmq.PUB)
-pub.bind('tcp://0.0.0.0:28000')
+pub_socketio_channel = context.socket(zmq.PUB)
+pub_socketio_channel.bind('tcp://0.0.0.0:28000')
 
 while True:
     alerts: List[Alert] = []
@@ -25,14 +26,18 @@ while True:
     logger.debug('Alert generation received new point: ' + str(json))
 
     if json[0]['measurement'] == 'trade':
-        pub.send_json({'measurement': 'latest_price', 'exchange': json[0]['tags']['exchange'], 'pair': json[0]['tags']['pair'], 'price': json[0]['fields']['price']})
+        pub_socketio_channel.send_json({'measurement': 'latest_price', 'exchange': json[0]['tags']['exchange'], 'pair': json[0]['tags']['pair'], 'price': json[0]['fields']['price']})
 
         for alert in alerts:
             logger.debug(alert.__dict__)
             if not alert.fulfilled or alert.repeat:
                 if alert.trigger(json[0]):
+                    notifications = EmailNotification.get_all_from_db(alert.alert_pk)
+                    for notification in notifications:
+                        notification.notify()
+
                     logger.info('pp fired off')
-                    pub.send_json({'measurement': 'alert', 'alert': 'price_point', 'price_point': alert.__dict__, 'trade': json[0]})
+                    pub_socketio_channel.send_json({'measurement': 'alert', 'alert': 'price_point', 'price_point': alert.__dict__, 'trade': json[0]})
                     alert.mark_fulfilled()
 
 
