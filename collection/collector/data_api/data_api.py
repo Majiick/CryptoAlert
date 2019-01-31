@@ -19,7 +19,7 @@ class Pair:
 
 class Exchange:
     def __init__(self, name: str):
-        assert(name.isupper() or name.isdigit())
+        assert(name.isupper() or name.isdigit())  # Exchange name needs to be all capitals or digits.
         self.name = name
 
 

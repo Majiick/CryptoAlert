@@ -11,7 +11,7 @@ context = zmq.Context()
 workers_socket = context.socket(zmq.SUB)  # Subs to collector_publisher PUB socket.
 workers_socket.connect('tcp://collector:27999')
 # We must declare the socket as of type SUBSCRIBER, and pass a prefix filter.
-# Here, the filter is the empty string, wich means we receive all messages.
+# Here, the filter is the empty string, which means we receive all messages.
 # We may subscribe to several filters, thus receiving from all.
 workers_socket.setsockopt_string(zmq.SUBSCRIBE, '')
 
@@ -21,7 +21,7 @@ pub.bind('tcp://0.0.0.0:28000')
 while True:
     alerts: List[Alert] = []
     alerts.extend(PricePoint.get_all_from_db())
-    json = workers_socket.recv_json()
+    json = workers_socket.recv_json()  # This is a data_api.py TradeInfo JSON
     logger.debug('Alert generation received new point: ' + str(json))
 
     if json[0]['measurement'] == 'trade':

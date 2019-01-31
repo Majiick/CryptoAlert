@@ -54,7 +54,7 @@ stdout_handler.setLevel(STD_MIN_LEVEL)
 stdout_handler.addFilter(log_filter)
 stderr_handler.setLevel(logging.WARN)
 
-logger.addHandler(graylog_handler)
+# logger.addHandler(graylog_handler)
 logger.addHandler(stderr_handler)
 logger.addHandler(stdout_handler)
 
