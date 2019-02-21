@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Type, Dict
 import time
 import zmq
+import influxdb
 from influxdb_init import db_client
 from mlogging import logger
 
@@ -123,16 +124,24 @@ class ContinuousDataAPI(ABC):
 
         time_started_send = time.time()
         zmq_context = zmq.Context()
-        zmq_socket = zmq_context.socket(zmq.PUSH)
-        zmq_socket.connect("tcp://localhost:27018")
-        zmq_socket.send_json(trade.get_as_json_dict())
-        assert(db_client.write_points(trade.get_as_json_dict(), time_precision='n'))  # I have benchmarked what takes the longest here, and this line is the culprit where we write to influxdb.
+        zmq_socket_collector_publisher = zmq_context.socket(zmq.PUSH)
+        zmq_socket_collector_publisher.connect("tcp://localhost:27018")
+        zmq_socket_collector_publisher.send_json(trade.get_as_json_dict())
+        # logger.info(trade.get_as_json_dict())
+        # assert(db_client.write_points(trade.get_as_json_dict(), time_precision='n'))  # I have benchmarked what takes the longest here, and this line is the culprit where we write to influxdb.
+        ######################################################################## TEMPORARY
+        try:
+            db_client.write_points(trade.get_as_json_dict(), time_precision='n')
+        except influxdb.exceptions.InfluxDBClientError as e:
+            for _ in range(200):
+                print(e)
+                logger.warning(trade.get_as_json_dict())
 
         time_to_write = time.time() - time_started_send
         if time_to_write > 0.1:
             logger.warning('It took {} to push trade to collector publisher and write to influxdb'.format(time_to_write))
         else:
-            logger.info('It took {} to push trade to collector publisher and write to influxdb'.format(time_to_write))
+            logger.debug('It took {} to push trade to collector publisher and write to influxdb'.format(time_to_write))
 
     @staticmethod
     @abstractmethod

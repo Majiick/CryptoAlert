@@ -8,8 +8,8 @@ import threading
 #####################################################################################################################################################################
 ######################################## CHANGE STD_MID_LEVEL FOR ALL PRINTS TO GO TO STDOUT ########################################################################
 #####################################################################################################################################################################
-STD_MIN_LEVEL = logging.DEBUG
-#STD_MIN_LEVEL = logging.WARN
+#STD_MIN_LEVEL = logging.DEBUG
+STD_MIN_LEVEL = logging.WARN
 # STD_MIN_LEVEL = logging.ERROR
 
 
@@ -34,9 +34,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
-
-    for _ in range(100):
-        print('lol')
+    
     logger.critical("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 sys.excepthook = handle_exception
 
@@ -71,7 +69,7 @@ stdout_handler.setLevel(STD_MIN_LEVEL)
 stdout_handler.addFilter(log_filter)
 stderr_handler.setLevel(logging.WARN)
 
-# logger.addHandler(graylog_handler)
+logger.addHandler(graylog_handler)
 logger.addHandler(stderr_handler)
 logger.addHandler(stdout_handler)
 

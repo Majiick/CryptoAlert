@@ -1,5 +1,5 @@
 # This script is started by the collector_starter.py
-# This script takes in messages from the data colleciton workers and publishes them on a channel
+# This script takes in messages from the data collection workers and publishes them on a channel. The alert generator listens to this channel.
 # It is needed since to publish you need to bind to an address and workers have multiple threads and ZeroMQ sockets can't be shared.
 # So you can't create multiple sockets for each thread because the binding address will be already takes
 

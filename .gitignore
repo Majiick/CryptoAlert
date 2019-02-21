@@ -3,3 +3,4 @@ webapp/static/package-lock.json
 graylog/data/
 .elasticsearch/
 .mongo/
+log.txt

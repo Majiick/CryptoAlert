@@ -10,7 +10,10 @@ import sys
 from data_api import DataAPI, Pair, Exchange, DataSource, ContinuousDataSource, ContinuousDataAPI, TradeInfo
 import math
 import time
+import mlogging
 from mlogging import logger
+import sys
+import traceback
 
 
 class BittrexWebsockets(ContinuousDataAPI):
@@ -41,11 +44,11 @@ class BittrexWebsockets(ContinuousDataAPI):
         # In case of 'queryExchangeState'
         if 'R' in msg and type(msg['R']) is not bool:
             decoded_msg = self.process_message(msg['R'])
-            print(decoded_msg)
+            logger.debug(decoded_msg)
 
     # Create error handler
     async def on_error(self, msg):
-        print(msg)
+        logger.error('Bittrex continuous worker received error: ' + msg)
         assert(False)
 
     async def on_subscribe_to_exchange_deltas(self, msg):
@@ -106,6 +109,7 @@ class BittrexWebsockets(ContinuousDataAPI):
             ContinuousDataAPI.write_trade(trade)
 
     def run(self):
+        logger.info('Running continuous worker {}'.format(str(type(self).__name__)))
         connection = Connection('https://socket.bittrex.com/signalr', session=None)
         hub = connection.register_hub('c2')
 
@@ -119,10 +123,16 @@ class BittrexWebsockets(ContinuousDataAPI):
 
         # Subscribe to all assigned pairs
         for pair in self.pairs:
-          hub.server.invoke('SubscribeToExchangeDeltas', pair.pair.replace('_', '-'))
+            hub.server.invoke('SubscribeToExchangeDeltas', pair.pair.replace('_', '-'))
 
         # Start the client
         connection.start()
 
     def run_blocking(self):
-        self.run()
+        while True:
+            try:
+                self.run()
+            except Exception as e:
+                logger.critical(traceback.format_exc())
+                logger.critical("Continuous worker failed: {}".format(str(e)))
+                continue

@@ -7,6 +7,10 @@ from mlogging import logger
 from typing import List, Type, Dict
 from data_api import Exchange
 import time
+import influxdb
+from influxdb_init import db_client
+
+COLLECT_HISTORICAL_DATA_AFTER = int(time.time())
 
 
 def startup_queue():
@@ -15,11 +19,44 @@ def startup_queue():
     The collector_starter listens to this channel.
     """
     context = zmq.Context()
-    zmq_startup_channel = context.socket(zmq.PUSH)
-    zmq_startup_channel.bind("tcp://0.0.0.0:5556")
+    zmq_collector_starter_command_channel = context.socket(zmq.PUSH)
+    zmq_collector_starter_command_channel.bind("tcp://0.0.0.0:5556")
 
+    ######################################################### TEMPORARY
+    # zmq_startup_channel.send_json({'command': 'start_continuous', 'target': 'BITTREX'})
     for exchange_name, _ in continuous_data_apis.items():
-        zmq_startup_channel.send_json({'command': 'start_continuous', 'target': exchange_name})
+        zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': exchange_name})
+
+
+def restart_worker(exchange_name: str):
+    context = zmq.Context()
+    zmq_collector_starter_command_channel = context.socket(zmq.PUSH)
+    zmq_collector_starter_command_channel.bind("tcp://0.0.0.0:5556")
+    zmq_collector_starter_command_channel.send_json({'command': 'restart_continuous', 'target': exchange_name})
+
+
+def record_continuous_worker_interruption(exchange: str, start_time: int, end_time: int):
+    # start_time: unix epoch in seconds
+    # end_time: unix epoch in seconds
+    assert(end_time >= start_time)
+    assert(start_time > int(time.time() - 86400))  # Check if timestamp is not more than one day old
+    assert(end_time > int(time.time() - 86400))  # Check if not more than one day old
+    write = [{
+        "measurement": "continuous_interruption",
+        "time": int(time.time_ns()),
+        "tags": {
+            "exchange": exchange,
+            "fulfilled": False
+        },
+        "fields": {
+            "pairs": "*",
+            "start_time": start_time-1,  # Allow for 1 second of safety
+            "end_time": end_time+1  # Allow for 1 second of safety
+        }
+    }]
+
+    logger.error('Recording continuous worker interruption: ' + str(write))
+    db_client.write_points(write, time_precision='n')
 
 
 def message_rate_calculation():
@@ -27,7 +64,7 @@ def message_rate_calculation():
     This function runs on its own thread and listens in on the collector_publisher channel to calculate the rate of messages coming from each continuous worker.
     The rates are logged.
     """
-    logger.info('Starting message rate calculation')
+    logger.info('Starting message_rate_calculation')
     context = zmq.Context()
     workers_socket = context.socket(zmq.SUB)  # Subs to collector_publisher PUB socket.
     workers_socket.connect('tcp://collector:27999')
@@ -46,7 +83,7 @@ def message_rate_calculation():
         cur_second_slot: int = int(time.time()) % 60
 
         # Clean out the slot that comes after our current slot
-        if (cur_second_slot + 1) % 5 in second_slots:
+        if (cur_second_slot + 1) % 60 in second_slots:
             second_slots[(cur_second_slot + 1) % 60] = dict()
 
         try:
@@ -66,7 +103,6 @@ def message_rate_calculation():
 
         except zmq.Again as e:
             time.sleep(0.01)
-
 
         if int(time.time()) - 30 > last_time_reported:  # Report every 30 seconds
             rates: Dict[str, int] = dict()  # Exchange to total amount of messages
@@ -88,9 +124,16 @@ def message_rate_calculation():
 
             for exchange, messages in rates.items():
                 if messages == 0:
-                    logger.warning('Exchange {} had 0 messages in past 60 seconds.'.format(exchange))
+                    logger.error('Exchange {} had 0 messages in past 60 seconds. Sending restart command and recording interruption.'.format(exchange))
+                    restart_worker(exchange)
+                    record_continuous_worker_interruption(exchange, int(time.time())-60, int(time.time()))
 
             last_time_reported = int(time.time())
+
+
+def collect_missing_historical_data():
+    logger.info('Starting collect_missing_historical_data')
+    # Check for any missing data using the continuous worker interrupted service measure
 
 
 def main():
@@ -99,6 +142,9 @@ def main():
 
     message_rate_calculation_thread = threading.Thread(target=message_rate_calculation)
     message_rate_calculation_thread.start()
+
+    collect_missing_historical_data_thread = threading.Thread(target=collect_missing_historical_data)
+    collect_missing_historical_data_thread.start()
 
     context = zmq.Context()
     zmq_socket = context.socket(zmq.PUSH)
@@ -110,6 +156,8 @@ def main():
 
     startup_queue_thread.join()
     message_rate_calculation_thread.join()
+    collect_missing_historical_data_thread.join()
+
 
 if __name__ == "__main__":
     main()

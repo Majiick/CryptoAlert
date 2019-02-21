@@ -3,6 +3,7 @@ import requests
 import time
 from mlogging import logger
 
+
 def create_client():
     host = 'influxdb'
     port = 8086
@@ -17,6 +18,7 @@ def create_client():
         time.sleep(10)
         client = InfluxDBClient(host, port, user, password, dbname)
     return client
+
 
 db_client = create_client()
 try:
