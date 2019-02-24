@@ -47,8 +47,7 @@ WEBSOCKET_PAIRS_INVERTED = {v: k for k, v in WEBSOCKET_PAIRS.items()}
 
 class PoloniexWebsocket(ContinuousDataAPI):
     def __init__(self, pairs: List[Pair]):
-        self.pairs = pairs
-        assert(len(self.pairs) > 0)
+        super().__init__(pairs)
 
     @staticmethod
     def get_all_pairs() -> List[Pair]:
@@ -108,7 +107,7 @@ class PoloniexWebsocket(ContinuousDataAPI):
                 currency_update = data[2]
                 await self.write_ticker(currency_update)
 
-    async def write_order_dump(self, order_dump, pair_id: int):
+    async def write_order_dump(self, order_dump):
         """
         :param order_dump: [
                             [
@@ -133,7 +132,49 @@ class PoloniexWebsocket(ContinuousDataAPI):
         :param pair_id: Pair id described in WEBSOCKET_PAIRS
         :return:
         """
-        pass
+
+        pair_name = order_dump[0][1]['currencyPair']
+        write_time = int(time.time_ns())
+        writes = []
+
+        print(pair_name)
+        rank = 0
+        for price, size in order_dump[0][1]['orderBook'][0].items():  # Sell orders
+            writes.append({
+                "measurement": "order_book",
+                "time": write_time,
+                "tags": {
+                    "exchange": 'POLONIEX',
+                    "pair": pair_name,
+                    "buy": False,
+                    "rank": rank
+                },
+                "fields": {
+                    "size": size,
+                    "price": price
+                }
+            })
+            rank += 1
+
+        rank = 0
+        for price, size in order_dump[0][1]['orderBook'][1].items():  # Buy orders
+            writes.append({
+                "measurement": "order_book",
+                "time": write_time,
+                "tags": {
+                    "exchange": 'POLONIEX',
+                    "pair": pair_name,
+                    "buy": True,
+                    "rank": rank
+                },
+                "fields": {
+                    "size": size,
+                    "price": price
+                }
+            })
+            rank += 1
+
+        db_client.write_points(writes, time_precision='n')
 
     async def write_order_update(self, order_updates, pair_id: int):
         assert(pair_id in WEBSOCKET_PAIRS_INVERTED)
@@ -146,7 +187,6 @@ class PoloniexWebsocket(ContinuousDataAPI):
         :pair_id: Pair id described in WEBSOCKET_PAIRS
         :return:
         """
-
         for update in order_updates:
             if update[0] == 't':  # Trade
                 buy = False
@@ -161,7 +201,7 @@ class PoloniexWebsocket(ContinuousDataAPI):
                                   float(update[4]),
                                   float(update[3]))
 
-                ContinuousDataAPI.write_trade(trade)
+                self.write_trade(trade)
             elif update[0] == 'o':  # New order
                 pass
                 # print('New Order')
@@ -175,7 +215,17 @@ class PoloniexWebsocket(ContinuousDataAPI):
             asyncio.ensure_future(websocket.send(json.dumps({'command': 'subscribe', 'channel': WEBSOCKET_PAIRS[pair.pair]})))
 
         while True:
-            # Received data will look like: https://poloniex.com/support/api/#websockets_channels_aggregated
+            # Received data will look like: https://docs.poloniex.com/#price-aggregated-book
+
+            # The first response is an order book dump like:
+            # [ <channel id>, <sequence number>, [ [ "i", { "currencyPair": "<currency pair name>", "orderBook": [ { "<lowest ask price>": "<lowest ask size>", "<next ask price>": "<next ask size>", ... }, { "<highest bid price>": "<highest bid size>", "<next bid price>": "<next bid size>", ... } ] } ] ] ]
+            # [ 14, 8767, [ [ "i", { "currencyPair": "BTC_BTS", "orderBook": [ { "0.00001853": "2537.5637", "0.00001854": "1567238.172367" }, { "0.00001841": "3645.3647", "0.00001840": "1637.3647" } ] } ] ] ]
+
+            # Subsequent responses:
+            # ["o", <1 for buy 0 for sell>, "<price>", "<size>"], ["t", "<trade id>", <1 for buy 0 for sell>, "<price>", "<size>", <timestamp>] ] ... ]
+            # [ 14, 8768, [ ["o", 1, "0.00001823", "5534.6474"], ["o", 0, "0.00001824", "6575.464"], ["t", "42706057", 1, "0.05567134", "0.00181421", 1522877119] ] ]
+
+
             data = await websocket.recv()
             data = json.loads(data)
 
@@ -183,11 +233,11 @@ class PoloniexWebsocket(ContinuousDataAPI):
             try:
                 if data[2][0][0] == 'i':
                     initial_dump = True
-            except KeyError:
-                pass
+            except (KeyError, IndexError):
+                logger.warning('Received data malformed, data is: {}'.format(str(data)))
 
             if initial_dump:
-                pass
+                await self.write_order_dump(data[2])
                 # print('Initial dump')
             else:
                 await self.write_order_update(data[2], data[0])
@@ -202,7 +252,9 @@ class PoloniexWebsocket(ContinuousDataAPI):
             except Exception as e:
                 logger.critical(traceback.format_exc())
                 logger.critical("Continuous worker failed: {}".format(str(e)))
-                continue
+                self.record_trade_interruption('POLONIEX')
+
+            logger.debug('here9999')
 
     def run_blocking(self):
         loop = asyncio.get_event_loop()

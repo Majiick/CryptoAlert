@@ -27,8 +27,8 @@ def add_data_source(data_source: DataSource):
 
 data_sources: Dict[str, Dict[str, List[DataSource]]] = dict()  # data_sources['btcusd']['poloniex'] = [DataSource1, DataSource2]
 continuous_data_apis: Dict[str, Type[ContinuousDataAPI]] = dict()  # Used by collector orchestrator and collector starter for startup commands.
-continuous_data_apis['POLONIEX'] = PoloniexWebsocket
-continuous_data_apis['BITTREX'] = BittrexWebsockets
+continuous_data_apis['POLONIEX'] = PoloniexWebsocket  # type: ignore
+continuous_data_apis['BITTREX'] = BittrexWebsockets  # type: ignore
 
 for data_source in cryptowatch.Cryptowatch.get_data_sources():
     add_data_source(data_source)

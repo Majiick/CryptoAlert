@@ -18,8 +18,7 @@ import traceback
 
 class BittrexWebsockets(ContinuousDataAPI):
     def __init__(self, pairs: List[Pair]):
-        self.pairs = pairs
-        assert(len(self.pairs) > 0)
+        super().__init__(pairs)
 
     @staticmethod
     def get_all_pairs() -> List[Pair]:
@@ -106,7 +105,7 @@ class BittrexWebsockets(ContinuousDataAPI):
                               float(fill['R']),
                               float(fill['Q']),
                               timestamp=timestamp)
-            ContinuousDataAPI.write_trade(trade)
+            self.write_trade(trade)
 
     def run(self):
         logger.info('Running continuous worker {}'.format(str(type(self).__name__)))
@@ -135,4 +134,4 @@ class BittrexWebsockets(ContinuousDataAPI):
             except Exception as e:
                 logger.critical(traceback.format_exc())
                 logger.critical("Continuous worker failed: {}".format(str(e)))
-                continue
+                self.record_trade_interruption('BITTREX')

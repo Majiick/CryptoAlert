@@ -23,7 +23,7 @@ def startup_queue():
     zmq_collector_starter_command_channel.bind("tcp://0.0.0.0:5556")
 
     ######################################################### TEMPORARY
-    # zmq_startup_channel.send_json({'command': 'start_continuous', 'target': 'BITTREX'})
+    # zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': 'POLONIEX'})
     for exchange_name, _ in continuous_data_apis.items():
         zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': exchange_name})
 
@@ -41,6 +41,8 @@ def record_continuous_worker_interruption(exchange: str, start_time: int, end_ti
     assert(end_time >= start_time)
     assert(start_time > int(time.time() - 86400))  # Check if timestamp is not more than one day old
     assert(end_time > int(time.time() - 86400))  # Check if not more than one day old
+    assert(type(start_time) is int)
+    assert(type(end_time) is int)
     write = [{
         "measurement": "continuous_interruption",
         "time": int(time.time_ns()),
@@ -136,15 +138,36 @@ def collect_missing_historical_data():
     # Check for any missing data using the continuous worker interrupted service measure
 
 
-def main():
-    startup_queue_thread = threading.Thread(target=startup_queue)
-    startup_queue_thread.start()
+def listen_for_reported_interruptions():
+    logger.info('Starting listen_for_reported_interruptions')
 
+    context = zmq.Context()
+    pull = context.socket(zmq.PULL)
+    pull.bind('tcp://0.0.0.0:99991')
+
+    while True:
+        logger.debug('Listening for next interruption in listen_for_reported_interruptions')
+        msg = pull.recv_json()
+        logger.debug('listen_for_reported_interruptions received msg ' + str(msg))
+
+        assert(msg['exchange'] is not None)
+        assert(msg['start_time'] is not None)
+        assert (msg['end_time'] is not None)
+        record_continuous_worker_interruption(msg['exchange'], msg['start_time'], msg['end_time'])
+
+
+def main():
     message_rate_calculation_thread = threading.Thread(target=message_rate_calculation)
     message_rate_calculation_thread.start()
 
     collect_missing_historical_data_thread = threading.Thread(target=collect_missing_historical_data)
     collect_missing_historical_data_thread.start()
+
+    listen_for_reported_interruptions_thread = threading.Thread(target=listen_for_reported_interruptions)
+    listen_for_reported_interruptions_thread.start()
+
+    startup_queue_thread = threading.Thread(target=startup_queue)
+    startup_queue_thread.start()
 
     context = zmq.Context()
     zmq_socket = context.socket(zmq.PUSH)
@@ -157,6 +180,7 @@ def main():
     startup_queue_thread.join()
     message_rate_calculation_thread.join()
     collect_missing_historical_data_thread.join()
+    listen_for_reported_interruptions_thread.join()
 
 
 if __name__ == "__main__":

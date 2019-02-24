@@ -112,17 +112,29 @@ class ContinuousDataSource:
 class ContinuousDataAPI(ABC):
     @abstractmethod
     def __init__(self, pairs: List[Pair]):
+        assert (len(pairs) > 0)
+
         self.pairs = pairs
+        self.time_last_written_trade = time.time()  # Last write that happened to InfluxDB in epoch seconds. Used when service interruption happens inside to record it.
 
     @abstractmethod
     async def run_blocking(self):
         pass
 
-    @staticmethod
-    def write_trade(trade: TradeInfo):
+    def record_trade_interruption(self, exchange: str):
+        logger.error('Last successful write at {}, recording interruption of {} sec for exchange {}.'.format(self.time_last_written_trade, int(time.time()) - int(self.time_last_written_trade), exchange))
+        zmq_context = zmq.Context()
+        zmq_socket = zmq_context.socket(zmq.PUSH)
+        zmq_socket.connect("tcp://collector-orchestrator:99991")
+
+        info = {'exchange': exchange, 'start_time': int(self.time_last_written_trade), 'end_time': int(time.time())}
+        logger.debug('About to transmit interruption to collector orchestrator, the collector orchestrator needs to confirm.')
+        zmq_socket.send_json(info)
+
+    def write_trade(self, trade: TradeInfo):
         assert(isinstance(trade, TradeInfo))
 
-        time_started_send = time.time()
+        time_started_send = int(time.time())
         zmq_context = zmq.Context()
         zmq_socket_collector_publisher = zmq_context.socket(zmq.PUSH)
         zmq_socket_collector_publisher.connect("tcp://localhost:27018")
@@ -132,10 +144,9 @@ class ContinuousDataAPI(ABC):
         ######################################################################## TEMPORARY
         try:
             db_client.write_points(trade.get_as_json_dict(), time_precision='n')
+            self.time_last_written_trade = int(time.time())
         except influxdb.exceptions.InfluxDBClientError as e:
-            for _ in range(200):
-                print(e)
-                logger.warning(trade.get_as_json_dict())
+            logger.error('InfluxDB error: ' + str(e) + ' data: ' + str(trade.get_as_json_dict()))
 
         time_to_write = time.time() - time_started_send
         if time_to_write > 0.1:
