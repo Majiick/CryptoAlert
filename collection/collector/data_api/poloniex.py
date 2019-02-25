@@ -228,13 +228,17 @@ class PoloniexWebsocket(ContinuousDataAPI):
 
             data = await websocket.recv()
             data = json.loads(data)
+            if data[0] == 1010:
+                logger.debug("Heartbeat from Poloniex, continuing.")
+                continue
 
             initial_dump = False
             try:
                 if data[2][0][0] == 'i':
                     initial_dump = True
             except (KeyError, IndexError):
-                logger.warning('Received data malformed, data is: {}'.format(str(data)))
+                logger.warning('Received data malformed, skipping, data is: {}.'.format(str(data)))
+                continue
 
             if initial_dump:
                 await self.write_order_dump(data[2])

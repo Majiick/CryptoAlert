@@ -86,7 +86,7 @@ class BittrexWebsockets(ContinuousDataAPI):
 
         json = self.process_message(msg[0])
 
-        for fill in json['f']:
+        for fill in json['f']:  # In fills
             buy = None
             if fill['OT'] == 'SELL':
                 buy = False
@@ -102,8 +102,8 @@ class BittrexWebsockets(ContinuousDataAPI):
             trade = TradeInfo(Exchange('BITTREX'),
                               Pair(json['M'].replace('-', '_')),
                               buy,
-                              float(fill['R']),
                               float(fill['Q']),
+                              float(fill['R']),
                               timestamp=timestamp)
             self.write_trade(trade)
 

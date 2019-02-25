@@ -7,6 +7,7 @@ from mlogging import logger
 from email_notification import EmailNotification
 
 logger.info("Started alert generation")
+last_trade_price : Dict[str, Dict[str, float]] = {}  # Dict[Exchange, Dict[Pair, Last Trade Price]]
 
 context = zmq.Context()
 workers_socket = context.socket(zmq.SUB)  # Subs to collector_publisher PUB socket.
@@ -27,6 +28,21 @@ while True:
 
     if json[0]['measurement'] == 'trade':
         pub_socketio_channel.send_json({'measurement': 'latest_price', 'exchange': json[0]['tags']['exchange'], 'pair': json[0]['tags']['pair'], 'price': json[0]['fields']['price']})
+
+        # Set last_trade_price
+        if json[0]['tags']['exchange'] not in last_trade_price:
+            last_trade_price[json[0]['tags']['exchange']] = {}
+
+        last_trade_price[json[0]['tags']['exchange']][json[0]['tags']['pair']] = json[0]['fields']['price']
+
+        for exchange, pairs in last_trade_price.items():
+            for pair in pairs:
+                for other_exchange, _ in last_trade_price.items():
+                    if other_exchange != exchange:
+                        if pair in last_trade_price[other_exchange]:
+                            print('Price difference for {}: {}'.format(pair, abs(last_trade_price[exchange][pair] - last_trade_price[other_exchange][pair])))
+                            print('Price for {} at {} is {}. While at {} it is {}.'.format(pair, exchange, last_trade_price[exchange][pair], other_exchange, last_trade_price[other_exchange][pair]))
+
 
         for alert in alerts:
             logger.debug(alert.__dict__)
