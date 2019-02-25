@@ -1,5 +1,5 @@
-from data_api import DataAPI, Pair, Exchange, DataSource, ContinuousDataSource, ContinuousDataAPI, TradeInfo
-from typing import List, Tuple
+from data_api import DataAPI, Pair, Exchange, DataSource, ContinuousDataSource, ContinuousDataAPI, TradeInfo, OrderBook
+from typing import List, Type, Dict, Tuple
 import requests
 import json
 import websockets
@@ -12,7 +12,9 @@ import mlogging
 from mlogging import logger
 import sys
 import traceback
-
+import mredis
+import collections
+from decimal import *
 
 
 WEBSOCKET_PAIRS = {'BTC_BCN': 7, 'BTC_BTS': 14, 'BTC_BURST': 15, 'BTC_CLAM': 20,
@@ -48,6 +50,9 @@ WEBSOCKET_PAIRS_INVERTED = {v: k for k, v in WEBSOCKET_PAIRS.items()}
 class PoloniexWebsocket(ContinuousDataAPI):
     def __init__(self, pairs: List[Pair]):
         super().__init__(pairs)
+        self.order_books: Dict[str, OrderBook] = {}
+        for pair in pairs:
+            self.order_books[pair.pair] = OrderBook(Exchange('POLONIEX'), pair)
 
     @staticmethod
     def get_all_pairs() -> List[Pair]:
@@ -137,47 +142,53 @@ class PoloniexWebsocket(ContinuousDataAPI):
         write_time = int(time.time_ns())
         writes = []
 
+        sell_orders = collections.OrderedDict()
+        buy_orders = collections.OrderedDict()
         print(pair_name)
         rank = 0
         for price, size in order_dump[0][1]['orderBook'][0].items():  # Sell orders
-            writes.append({
-                "measurement": "order_book",
-                "time": write_time,
-                "tags": {
-                    "exchange": 'POLONIEX',
-                    "pair": pair_name,
-                    "buy": False,
-                    "rank": rank
-                },
-                "fields": {
-                    "size": size,
-                    "price": price
-                }
-            })
-            rank += 1
+            sell_orders[Decimal(price)] = Decimal(size)
+            # writes.append({
+            #     "measurement": "order_book",
+            #     "time": write_time,
+            #     "tags": {
+            #         "exchange": 'POLONIEX',
+            #         "pair": pair_name,
+            #         "buy": False,
+            #         "rank": rank
+            #     },
+            #     "fields": {
+            #         "size": size,
+            #         "price": price
+            #     }
+            # })
+            # rank += 1
 
         rank = 0
         for price, size in order_dump[0][1]['orderBook'][1].items():  # Buy orders
-            writes.append({
-                "measurement": "order_book",
-                "time": write_time,
-                "tags": {
-                    "exchange": 'POLONIEX',
-                    "pair": pair_name,
-                    "buy": True,
-                    "rank": rank
-                },
-                "fields": {
-                    "size": size,
-                    "price": price
-                }
-            })
-            rank += 1
+            buy_orders[Decimal(price)] = Decimal(size)
+            # writes.append({
+            #     "measurement": "order_book",
+            #     "time": write_time,
+            #     "tags": {
+            #         "exchange": 'POLONIEX',
+            #         "pair": pair_name,
+            #         "buy": True,
+            #         "rank": rank
+            #     },
+            #     "fields": {
+            #         "size": size,
+            #         "price": price
+            #     }
+            # })
+            # rank += 1
 
-        db_client.write_points(writes, time_precision='n')
+        self.order_books[pair_name].set_initial_orders(sell_orders, buy_orders)
+        # db_client.write_points(writes, time_precision='n')
 
     async def write_order_update(self, order_updates, pair_id: int):
         assert(pair_id in WEBSOCKET_PAIRS_INVERTED)
+        pair_name = WEBSOCKET_PAIRS_INVERTED[pair_id]
         """
         :param order_updates: An array of   [
                                              ["o", <1 for buy 0 for sell>, "<price>", "<size>"],
@@ -190,7 +201,7 @@ class PoloniexWebsocket(ContinuousDataAPI):
         for update in order_updates:
             if update[0] == 't':  # Trade
                 buy = False
-                if update[2] == 1:
+                if int(update[2]) == 1:
                     buy = True
                 else:
                     buy = False
@@ -201,10 +212,21 @@ class PoloniexWebsocket(ContinuousDataAPI):
                                   float(update[4]),
                                   float(update[3]))
 
+                self.order_books[pair_name].update_using_trade(buy, Decimal(update[3]), Decimal(update[4]))
                 self.write_trade(trade)
-            elif update[0] == 'o':  # New order
-                pass
-                # print('New Order')
+            elif update[0] == 'o':  # Order Book modification
+                buy = False
+                if int(update[1]) == 1:
+                    buy = True
+                else:
+                    buy = False
+
+                if Decimal(update[3]) == 0:  # Price level removal if quantity is 0 https://docs.poloniex.com/#price-aggregated-book
+                    self.order_books[pair_name].remove_order(buy, Decimal(update[2]))
+                else:
+                    self.order_books[pair_name].add_order(buy, Decimal(update[2]), Decimal(update[3]))
+
+
 
     async def run_orders(self):
         websocket = await websockets.connect('wss://api2.poloniex.com')
@@ -227,7 +249,7 @@ class PoloniexWebsocket(ContinuousDataAPI):
 
 
             data = await websocket.recv()
-            data = json.loads(data)
+            data = json.loads(data, parse_float=Decimal)
             if data[0] == 1010:
                 logger.debug("Heartbeat from Poloniex, continuing.")
                 continue

@@ -81,6 +81,11 @@ services:
                         #  - "443:443"
                 networks:
                         - globalnet
+
+        redis:
+                image: "redis"
+                networks:
+                        - globalnet
 #        grafana:
 #                image: "grafana/grafana"
 #                volumes:

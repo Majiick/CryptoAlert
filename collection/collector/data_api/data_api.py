@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import List, Type, Dict
+from typing import List, Type, Dict, Tuple
 import time
 import zmq
 import influxdb
 from influxdb_init import db_client
 from mlogging import logger
+import collections
+import mredis
+from decimal import *
 
 
 class Pair:
@@ -62,6 +65,117 @@ class TradeInfo:
                     }
                 }
                ]
+
+
+class OrderBook:
+    def __init__(self, exchange: Exchange, pair: Pair):
+        self.exchange = exchange
+        self.pair = pair
+        self.sell_orders: Dict[Decimal, Decimal] = collections.OrderedDict()  # Sell and buy orders are a dict: price -> volume
+        self.buy_orders: Dict[Decimal, Decimal] = collections.OrderedDict()
+        self.initial_orders_set = False
+
+    def set_initial_orders(self, sell_orders, buy_orders):
+        # assert(len(sell_orders) > 0)
+        # assert(len(buy_orders) > 0)
+        self.sell_orders = sell_orders
+        self.buy_orders = buy_orders
+        self.initial_orders_set = True
+
+    def add_order(self, buy: bool, price: Decimal, size: Decimal):
+        assert(self.initial_orders_set)
+        assert(price > 0)
+        assert(size > 0)
+
+        if buy:
+            if price not in self.buy_orders:
+                self.buy_orders[price] = Decimal(0)
+            self.buy_orders[price] += size
+            print(self.pair.pair + " Adding buy order at price " + str(price))
+        else:
+            if price not in self.sell_orders:
+                self.sell_orders[price] = Decimal(0)
+            self.sell_orders[price] += size
+            print(self.pair.pair + "Adding sell order at price " + str(price))
+
+    """
+
+
+
+
+
+
+
+
+
+    PROBLEM IS REMOVING PRICE LEVEL RIGHT BEFORE THE TRADE HAPPENS. IF QUANTITY = 0 THEN REMOVE
+
+
+
+
+
+
+
+
+
+
+
+
+    """
+
+    def remove_order(self, buy: bool, price: Decimal):
+        """
+        Removes order at price. Removes fully.
+        """
+        assert(self.initial_orders_set)
+        print('Removing price {}'.format(price))
+        if buy:
+            if price in self.buy_orders:
+                del self.buy_orders[price]
+            else:
+                assert('Price not in buy orders')
+        else:
+            if price in self.sell_orders:
+                del self.sell_orders[price]
+            else:
+                assert('Price not in sell orders')
+
+    def update_using_trade(self, buy: bool, price: Decimal, size: Decimal):
+        assert(self.initial_orders_set)
+
+        print('xD: ' + self.pair.pair + str(buy))
+        if buy:  # If bought then sell order (or a part of it) is fulfilled and vice versa.
+            # print(self.sell_orders)
+            try:
+                self.sell_orders[price] -= size
+                assert(self.sell_orders[price] >= 0)
+            except KeyError:
+                print(self.sell_orders)
+                print(price)
+                print(list(self.sell_orders.keys())[0])
+                print(price == list(self.sell_orders.keys())[0])
+                print(price in self.buy_orders)
+        else:
+            try:
+                # print(self.buy_orders)
+                self.buy_orders[price] -= size
+                assert(self.buy_orders[price] >= 0)
+            except KeyError:
+                print(self.buy_orders)
+                print(price)
+                print(list(self.buy_orders.keys())[0])
+                print(price == list(self.buy_orders.keys())[0])
+                print(price in self.sell_orders)
+
+    def get_as_json_dict(self):
+        assert(self.initial_orders_set)
+
+    def save_order_book(self):
+        """
+        Saves order book to Redis
+        """
+        assert(self.initial_orders_set)
+        mredis.save_order_book(self)
 
 
 class DataSource:
