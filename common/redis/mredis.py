@@ -16,6 +16,7 @@ import redis
 import json
 from typing import List, Type, Dict
 from mlogging import logger
+import simplejson
 
 MAX_ORDER_BOOK_HISTORY = 100
 
@@ -23,5 +24,10 @@ r = redis.Redis(host='redis', port=6379, db=0)
 
 
 def save_order_book(order_book):
-    r.lpush(order_book.exchange.name + order_book.pair.pair, json.dumps(order_book.get_as_json_dict()))
-    r.ltrim(order_book.exchange.name + order_book.pair.pair, MAX_ORDER_BOOK_HISTORY)
+    print('Saving order book')
+    json_dict = order_book.get_as_json_dict()
+    assert['sell' in json_dict]
+    assert['buy' in json_dict]
+    json_string = simplejson.dumps(json_dict, use_decimal=True)
+    r.lpush(order_book.exchange.name + order_book.pair.pair, json_string)
+    r.ltrim(order_book.exchange.name + order_book.pair.pair, 0, MAX_ORDER_BOOK_HISTORY)

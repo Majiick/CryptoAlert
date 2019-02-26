@@ -8,6 +8,8 @@ from mlogging import logger
 import collections
 import mredis
 from decimal import *
+import json
+import simplejson
 
 
 class Pair:
@@ -98,37 +100,14 @@ class OrderBook:
             self.sell_orders[price] += size
             print(self.pair.pair + "Adding sell order at price " + str(price))
 
-    """
+        self.save_order_book()
 
-
-
-
-
-
-
-
-
-    PROBLEM IS REMOVING PRICE LEVEL RIGHT BEFORE THE TRADE HAPPENS. IF QUANTITY = 0 THEN REMOVE
-
-
-
-
-
-
-
-
-
-
-
-
-    """
 
     def remove_order(self, buy: bool, price: Decimal):
         """
         Removes order at price. Removes fully.
         """
         assert(self.initial_orders_set)
-        print('Removing price {}'.format(price))
         if buy:
             if price in self.buy_orders:
                 del self.buy_orders[price]
@@ -140,6 +119,8 @@ class OrderBook:
             else:
                 assert('Price not in sell orders')
 
+        self.save_order_book()
+
     def update_using_trade(self, buy: bool, price: Decimal, size: Decimal):
         assert(self.initial_orders_set)
 
@@ -150,25 +131,32 @@ class OrderBook:
                 self.sell_orders[price] -= size
                 assert(self.sell_orders[price] >= 0)
             except KeyError:
-                print(self.sell_orders)
-                print(price)
-                print(list(self.sell_orders.keys())[0])
-                print(price == list(self.sell_orders.keys())[0])
-                print(price in self.buy_orders)
+                logger.error(self.sell_orders)
+                logger.error(price)
+                logger.error(list(self.sell_orders.keys())[0])
+                logger.error(price == list(self.sell_orders.keys())[0])
+                logger.error(price in self.buy_orders)
         else:
             try:
                 # print(self.buy_orders)
                 self.buy_orders[price] -= size
                 assert(self.buy_orders[price] >= 0)
             except KeyError:
-                print(self.buy_orders)
-                print(price)
-                print(list(self.buy_orders.keys())[0])
-                print(price == list(self.buy_orders.keys())[0])
-                print(price in self.sell_orders)
+                logger.error(self.buy_orders)
+                logger.error(price)
+                logger.error(list(self.buy_orders.keys())[0])
+                logger.error(price == list(self.buy_orders.keys())[0])
+                logger.error(price in self.sell_orders)
+
+        self.save_order_book()
 
     def get_as_json_dict(self):
         assert(self.initial_orders_set)
+        json_dict = {}
+        json_dict['sell'] = self.sell_orders
+        json_dict['buy'] = self.buy_orders
+
+        return json_dict
 
     def save_order_book(self):
         """

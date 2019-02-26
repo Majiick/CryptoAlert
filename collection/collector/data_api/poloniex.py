@@ -186,7 +186,7 @@ class PoloniexWebsocket(ContinuousDataAPI):
         self.order_books[pair_name].set_initial_orders(sell_orders, buy_orders)
         # db_client.write_points(writes, time_precision='n')
 
-    async def write_order_update(self, order_updates, pair_id: int):
+    async def write_order_updates(self, order_updates, pair_id: int, jsonraw=None):
         assert(pair_id in WEBSOCKET_PAIRS_INVERTED)
         pair_name = WEBSOCKET_PAIRS_INVERTED[pair_id]
         """
@@ -198,6 +198,19 @@ class PoloniexWebsocket(ContinuousDataAPI):
         :pair_id: Pair id described in WEBSOCKET_PAIRS
         :return:
         """
+
+
+
+        # Do removal_updates last.
+        # Price level removal if quantity is 0 https://docs.poloniex.com/#price-aggregated-book
+        removal_updates = []
+        for update in order_updates:
+            if update[0] == 'o':
+                if Decimal(update[3]) == Decimal(0):
+                    removal_updates.append(update)
+
+        order_updates = [x for x in order_updates if not (x[0] == 'o' and Decimal(x[3]) == Decimal(0))]
+
         for update in order_updates:
             if update[0] == 't':  # Trade
                 buy = False
@@ -221,10 +234,21 @@ class PoloniexWebsocket(ContinuousDataAPI):
                 else:
                     buy = False
 
-                if Decimal(update[3]) == 0:  # Price level removal if quantity is 0 https://docs.poloniex.com/#price-aggregated-book
+                if Decimal(update[3]) == Decimal(0):  # Price level removal if quantity is 0 https://docs.poloniex.com/#price-aggregated-book
+                    assert(False)  # This should be in removal_updates
                     self.order_books[pair_name].remove_order(buy, Decimal(update[2]))
                 else:
                     self.order_books[pair_name].add_order(buy, Decimal(update[2]), Decimal(update[3]))
+
+        # Execute removal modifications
+        for removal_update in removal_updates:
+            buy = False
+            if int(update[1]) == 1:
+                buy = True
+            else:
+                buy = False
+
+            self.order_books[pair_name].remove_order(buy, Decimal(removal_update[2]))
 
 
 
@@ -248,8 +272,9 @@ class PoloniexWebsocket(ContinuousDataAPI):
             # [ 14, 8768, [ ["o", 1, "0.00001823", "5534.6474"], ["o", 0, "0.00001824", "6575.464"], ["t", "42706057", 1, "0.05567134", "0.00181421", 1522877119] ] ]
 
 
-            data = await websocket.recv()
-            data = json.loads(data, parse_float=Decimal)
+            raw_json = await websocket.recv()
+            data = json.loads(raw_json, parse_float=Decimal)
+
             if data[0] == 1010:
                 logger.debug("Heartbeat from Poloniex, continuing.")
                 continue
@@ -266,7 +291,7 @@ class PoloniexWebsocket(ContinuousDataAPI):
                 await self.write_order_dump(data[2])
                 # print('Initial dump')
             else:
-                await self.write_order_update(data[2], data[0])
+                await self.write_order_updates(data[2], data[0], jsonraw=raw_json)
 
     async def run(self):
         # asyncio.ensure_future(self.run_tickers())
