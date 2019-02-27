@@ -16,13 +16,28 @@ import sys
 import traceback
 
 
+"""
+https://bittrex.github.io/api/v1-1
+
+Socket Connections
+Websocket connections may occasionally need to be recycled. If, for example, you're maintinaing local order book state, and you stop receiving updates even though you know trade activity is occurring, it may be time to resynchronize.
+
+Because v1.1 websocket nonces are server-specific, it's crucial to maintain state on a per-connection basis. For example, to resychronize the BTC-ETH market order book:
+
+Drop existing websocket connections and flush accumulated data and state (e.g. market nonces).
+Re-establish websocket connection.
+Subscribe to BTC-ETH market deltas, cache received data keyed by nonce.
+Query BTC-ETH market state.
+Apply cached deltas sequentially, starting with nonces greater than that received in step 4.
+"""
+
 class BittrexWebsockets(ContinuousDataAPI):
     def __init__(self, pairs: List[Pair]):
         super().__init__(pairs)
 
-        # A nonce number for every pair that is increased by one every time a message is received. Used for missing messages and transitioning from order book snapshot to deltas.
-        # The entry is made when the queryExchangeState gets the snapshot.
+        self.market_queryExchangeState_nonce: Dict[str, int] = {}
         self.market_nonce_numbers: Dict[str, int] = {}
+        self.cached_received_exchange_deltas: Dict[str, List[str]] = {}  # The exchange deltas that were received before getting the market snapshot.
 
     @staticmethod
     def get_all_pairs() -> List[Pair]:
@@ -46,13 +61,14 @@ class BittrexWebsockets(ContinuousDataAPI):
     async def on_debug(self, **msg):
         # In case of 'queryExchangeState'
         # queryExchangeState example: {'M': 'BTC-NEO', 'N': 916508, 'Z': [{'Q': 1.48220452, 'R': 0.00235045}, {'Q': 51.44229504, 'R': 0.00235001}, {'Q': 4.96547649, 'R': 0.00235}, {'Q': 0.5, 'R': 0.00234982}, {'Q': 1234.31287009, 'R': 0.00234866}, {'Q': 771.41221481, 'R': 0.00234852}, ...
-        print(msg)
+        # print(msg)
         if 'R' in msg and type(msg['R']) is not bool:
             decoded_msg = self.process_message(msg['R'])
-            self.market_nonce_numbers[decoded_msg['M'].replace('-', '_')] = int(decoded_msg['N'])
-            logger.debug(decoded_msg)
-            print(decoded_msg['N'])
-            print(int(decoded_msg['N']))
+            # self.market_nonce_numbers[decoded_msg['M'].replace('-', '_')] = int(decoded_msg['N'])
+            self.market_queryExchangeState_nonce[decoded_msg['M'].replace('-', '_')] = int(decoded_msg['N'])
+            # logger.debug(decoded_msg)
+            # print(decoded_msg['N'])
+            # print(int(decoded_msg['N']))
             logger.debug('Received queryExchangeState for market {}. Nonce: {}'.format(decoded_msg['M'].replace('-', '_'), int(decoded_msg['N'])))
 
 
@@ -96,12 +112,50 @@ class BittrexWebsockets(ContinuousDataAPI):
         DELTA_TYPES = {0: 'ADD', 1: 'REMOVE', 2: 'UPDATE'}
 
         json = self.process_message(msg[0])
-        if json['M'].replace('-', '_') not in self.market_nonce_numbers:
-            logger.warning('Nonce for market {} not set yet. This means the order book snapshot not yet received.'.format(json['M'].replace('-', '_')))
+        market_name = json['M'].replace('-', '_')
+        if market_name not in self.market_queryExchangeState_nonce:
+            logger.debug('Nonce for market {} not set yet. This means the order book snapshot not yet received. Caching this trade.'.format(market_name))
+            if market_name not in self.cached_received_exchange_deltas:
+                self.cached_received_exchange_deltas[market_name] = []
+
+            self.cached_received_exchange_deltas[market_name].append(json)
             return
 
-        assert(int(json['N']) == self.market_nonce_numbers[json['M'].replace('-', '_')] + 1)
-        self.market_nonce_numbers[json['M'].replace('-', '_')] = int(json['N'])
+        deltas_to_execute = []
+        no_cached_entries = False
+        if market_name not in self.market_nonce_numbers:
+            # The market received first trade after acquiring the book snapshot. Execute cached trades with nonce greater than snapshot nonce.
+            if market_name not in self.cached_received_exchange_deltas:
+                # No cached entries.
+                no_cached_entries = True
+            else:
+                # Add cached entries to deltas_to_execute
+                last_cached_delta_nonce = None
+                for cached_delta in self.cached_received_exchange_deltas[market_name]:  # Iterates in order received, so increasing nonce number.
+                    if last_cached_delta_nonce is not None:
+                        assert(int(cached_delta['N']) == last_cached_delta_nonce + 1)  # Cached deltas skipped a nonce
+                    if int(cached_delta['N']) > self.market_queryExchangeState_nonce[market_name]:
+                        deltas_to_execute.append(cached_delta)
+                        print("Adding one delta to execute with nonce: {}. Snapshot nonce: {}".format(int(cached_delta['N']), self.market_queryExchangeState_nonce[market_name]))
+
+        if no_cached_entries and market_name not in self.market_nonce_numbers:
+            # If there were no cached entries but this is the first trade after acquiring book snapshot, then make sure trade lines up with snapshot nonce.
+            assert(self.market_queryExchangeState_nonce[market_name] == int(json['N'])-1)
+        else:
+            if len(deltas_to_execute) > 0:
+                assert(int(deltas_to_execute[-1]['N']) == int(json['N'])-1)  # Make sure that cached updates line up with the received update.
+            else:
+                assert(self.market_nonce_numbers[market_name] == int(json['N'])-1)  # Make sure that update nonce lines up with last update.
+
+
+        ############
+
+
+        # IF deltas_to_execute then execute them.
+
+
+        ###########
+        self.market_nonce_numbers[market_name] = int(json['N'])
 
         for fill in json['f']:  # In fills
             buy = None
@@ -142,12 +196,15 @@ class BittrexWebsockets(ContinuousDataAPI):
         hub.client.on('uE', self.on_subscribe_to_exchange_deltas)
 
         # Subscribe to all assigned pairs
+        i = 0
         for pair in self.pairs:
             logger.info(pair.pair)
             hub.server.invoke('SubscribeToExchangeDeltas', pair.pair.replace('_', '-'))
             hub.server.invoke('queryExchangeState', pair.pair.replace('_', '-'))
-            break
-            time.sleep(0.1)
+            i += 1
+
+            if i > 3:
+                break
 
 
         # Start the client
