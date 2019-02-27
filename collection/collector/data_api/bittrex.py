@@ -20,6 +20,10 @@ class BittrexWebsockets(ContinuousDataAPI):
     def __init__(self, pairs: List[Pair]):
         super().__init__(pairs)
 
+        # A nonce number for every pair that is increased by one every time a message is received. Used for missing messages and transitioning from order book snapshot to deltas.
+        # The entry is made when the queryExchangeState gets the snapshot.
+        self.market_nonce_numbers: Dict[str, int] = {}
+
     @staticmethod
     def get_all_pairs() -> List[Pair]:
         r = requests.get('https://api.bittrex.com/api/v1.1/public/getmarkets')
@@ -41,9 +45,16 @@ class BittrexWebsockets(ContinuousDataAPI):
     # Create debug message handler.
     async def on_debug(self, **msg):
         # In case of 'queryExchangeState'
+        # queryExchangeState example: {'M': 'BTC-NEO', 'N': 916508, 'Z': [{'Q': 1.48220452, 'R': 0.00235045}, {'Q': 51.44229504, 'R': 0.00235001}, {'Q': 4.96547649, 'R': 0.00235}, {'Q': 0.5, 'R': 0.00234982}, {'Q': 1234.31287009, 'R': 0.00234866}, {'Q': 771.41221481, 'R': 0.00234852}, ...
+        print(msg)
         if 'R' in msg and type(msg['R']) is not bool:
             decoded_msg = self.process_message(msg['R'])
+            self.market_nonce_numbers[decoded_msg['M'].replace('-', '_')] = int(decoded_msg['N'])
             logger.debug(decoded_msg)
+            print(decoded_msg['N'])
+            print(int(decoded_msg['N']))
+            logger.debug('Received queryExchangeState for market {}. Nonce: {}'.format(decoded_msg['M'].replace('-', '_'), int(decoded_msg['N'])))
+
 
     # Create error handler
     async def on_error(self, msg):
@@ -85,6 +96,12 @@ class BittrexWebsockets(ContinuousDataAPI):
         DELTA_TYPES = {0: 'ADD', 1: 'REMOVE', 2: 'UPDATE'}
 
         json = self.process_message(msg[0])
+        if json['M'].replace('-', '_') not in self.market_nonce_numbers:
+            logger.warning('Nonce for market {} not set yet. This means the order book snapshot not yet received.'.format(json['M'].replace('-', '_')))
+            return
+
+        assert(int(json['N']) == self.market_nonce_numbers[json['M'].replace('-', '_')] + 1)
+        self.market_nonce_numbers[json['M'].replace('-', '_')] = int(json['N'])
 
         for fill in json['f']:  # In fills
             buy = None
@@ -108,6 +125,10 @@ class BittrexWebsockets(ContinuousDataAPI):
             self.write_trade(trade)
 
     def run(self):
+        """
+        Need to QueryExchangeState for every market first
+        :return:
+        """
         logger.info('Running continuous worker {}'.format(str(type(self).__name__)))
         connection = Connection('https://socket.bittrex.com/signalr', session=None)
         hub = connection.register_hub('c2')
@@ -122,7 +143,12 @@ class BittrexWebsockets(ContinuousDataAPI):
 
         # Subscribe to all assigned pairs
         for pair in self.pairs:
+            logger.info(pair.pair)
             hub.server.invoke('SubscribeToExchangeDeltas', pair.pair.replace('_', '-'))
+            hub.server.invoke('queryExchangeState', pair.pair.replace('_', '-'))
+            break
+            time.sleep(0.1)
+
 
         # Start the client
         connection.start()

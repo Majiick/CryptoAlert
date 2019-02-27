@@ -93,12 +93,12 @@ class OrderBook:
             if price not in self.buy_orders:
                 self.buy_orders[price] = Decimal(0)
             self.buy_orders[price] += size
-            print(self.pair.pair + " Adding buy order at price " + str(price))
+            # print(self.pair.pair + " Adding buy order at price " + str(price))
         else:
             if price not in self.sell_orders:
                 self.sell_orders[price] = Decimal(0)
             self.sell_orders[price] += size
-            print(self.pair.pair + "Adding sell order at price " + str(price))
+            # print(self.pair.pair + "Adding sell order at price " + str(price))
 
         self.save_order_book()
 
@@ -124,7 +124,7 @@ class OrderBook:
     def update_using_trade(self, buy: bool, price: Decimal, size: Decimal):
         assert(self.initial_orders_set)
 
-        print('xD: ' + self.pair.pair + str(buy))
+        # print('xD: ' + self.pair.pair + str(buy))
         if buy:  # If bought then sell order (or a part of it) is fulfilled and vice versa.
             # print(self.sell_orders)
             try:
@@ -136,6 +136,7 @@ class OrderBook:
                 logger.error(list(self.sell_orders.keys())[0])
                 logger.error(price == list(self.sell_orders.keys())[0])
                 logger.error(price in self.buy_orders)
+                assert(False)
         else:
             try:
                 # print(self.buy_orders)
@@ -147,6 +148,7 @@ class OrderBook:
                 logger.error(list(self.buy_orders.keys())[0])
                 logger.error(price == list(self.buy_orders.keys())[0])
                 logger.error(price in self.sell_orders)
+                assert(False)
 
         self.save_order_book()
 
