@@ -84,6 +84,19 @@ class OrderBook:
         self.buy_orders = buy_orders
         self.initial_orders_set = True
 
+    def set_order(self, buy: bool, price: Decimal, new_size: Decimal):
+        assert(self.initial_orders_set)
+        assert(price > 0)
+        assert(new_size > 0)
+
+        logger.debug(self.pair.pair + " Setting order at price " + str(price))
+        if buy:
+            assert(price in self.buy_orders)
+            self.buy_orders[price] = new_size
+        else:
+            assert (price in self.sell_orders)
+            self.sell_orders[price] = new_size
+
     def add_order(self, buy: bool, price: Decimal, size: Decimal):
         assert(self.initial_orders_set)
         assert(price > 0)
@@ -93,20 +106,18 @@ class OrderBook:
             if price not in self.buy_orders:
                 self.buy_orders[price] = Decimal(0)
             self.buy_orders[price] += size
-            # print(self.pair.pair + " Adding buy order at price " + str(price))
+            logger.debug(self.pair.pair + " Adding buy order at price " + str(price))
         else:
             if price not in self.sell_orders:
                 self.sell_orders[price] = Decimal(0)
             self.sell_orders[price] += size
-            # print(self.pair.pair + "Adding sell order at price " + str(price))
-
-        self.save_order_book()
-
+            logger.debug(self.pair.pair + "Adding sell order at price " + str(price))
 
     def remove_order(self, buy: bool, price: Decimal):
         """
         Removes order at price. Removes fully.
         """
+        logger.debug(self.pair.pair + " Removing order at price " + str(price) + " buy:{}".format(buy))
         assert(self.initial_orders_set)
         if buy:
             if price in self.buy_orders:
@@ -119,12 +130,10 @@ class OrderBook:
             else:
                 assert('Price not in sell orders')
 
-        self.save_order_book()
-
     def update_using_trade(self, buy: bool, price: Decimal, size: Decimal):
         assert(self.initial_orders_set)
 
-        # print('xD: ' + self.pair.pair + str(buy))
+        # logger.debug('xD: ' + self.pair.pair + str(buy))
         if buy:  # If bought then sell order (or a part of it) is fulfilled and vice versa.
             # print(self.sell_orders)
             try:
@@ -150,8 +159,6 @@ class OrderBook:
                 logger.error(price in self.sell_orders)
                 assert(False)
 
-        self.save_order_book()
-
     def get_as_json_dict(self):
         assert(self.initial_orders_set)
         json_dict = {}
@@ -162,7 +169,8 @@ class OrderBook:
 
     def save_order_book(self):
         """
-        Saves order book to Redis
+        Saves order book to Redis.
+        Needs to be called by the workers.
         """
         assert(self.initial_orders_set)
         mredis.save_order_book(self)

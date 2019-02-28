@@ -24,7 +24,7 @@ r = redis.Redis(host='redis', port=6379, db=0)
 
 
 def save_order_book(order_book):
-    print('Saving order book')
+    # print('Saving order book')
     json_dict = order_book.get_as_json_dict()
     assert['sell' in json_dict]
     assert['buy' in json_dict]

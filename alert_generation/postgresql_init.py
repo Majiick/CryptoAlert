@@ -29,3 +29,15 @@ with engine.begin() as conn:
 
     # s = text("insert into PRICE_POINT_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction) values (DEFAULT, :user_pk, FALSE, FALSE, '*', '*', 0.5, 'up')")
     # conn.execute(s, user_pk=user_pk)
+
+    # s = text("insert into VOLUME_POINT_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point) values (DEFAULT, :user_pk, FALSE, FALSE, '*', '*', 1)")
+    # conn.execute(s, user_pk=user_pk)
+
+    s = text("insert into PRICE_PERCENTAGE_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, time_frame) values (DEFAULT, :user_pk, FALSE, TRUE, '*', '*', 1, 'up', 60)")
+    conn.execute(s, user_pk=user_pk)
+    s = text("insert into PRICE_PERCENTAGE_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, time_frame) values (DEFAULT, :user_pk, FALSE, TRUE, '*', '*', 1, 'down', 60)")
+    conn.execute(s, user_pk=user_pk)
+    s = text("insert into PRICE_PERCENTAGE_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, time_frame) values (DEFAULT, :user_pk, FALSE, TRUE, '*', '*', 1, 'down', 300)")
+    conn.execute(s, user_pk=user_pk)
+    s = text("insert into PRICE_PERCENTAGE_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, time_frame) values (DEFAULT, :user_pk, FALSE, TRUE, '*', '*', 1, 'up', 300)")
+    conn.execute(s, user_pk=user_pk)

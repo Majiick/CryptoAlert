@@ -7,13 +7,15 @@ import asyncio
 import requests
 from typing import List, Type, Dict, Any
 import sys
-from data_api import DataAPI, Pair, Exchange, DataSource, ContinuousDataSource, ContinuousDataAPI, TradeInfo
+from data_api import DataAPI, Pair, Exchange, DataSource, ContinuousDataSource, ContinuousDataAPI, TradeInfo, OrderBook
 import math
 import time
 import mlogging
 from mlogging import logger
 import sys
+from decimal import *
 import traceback
+import collections
 
 
 """
@@ -38,6 +40,7 @@ class BittrexWebsockets(ContinuousDataAPI):
         self.market_queryExchangeState_nonce: Dict[str, int] = {}
         self.market_nonce_numbers: Dict[str, int] = {}
         self.cached_received_exchange_deltas: Dict[str, List[str]] = {}  # The exchange deltas that were received before getting the market snapshot.
+        self.order_books: Dict[str, OrderBook] = {}
 
     @staticmethod
     def get_all_pairs() -> List[Pair]:
@@ -55,7 +58,7 @@ class BittrexWebsockets(ContinuousDataAPI):
 
     def process_message(self, message):
         deflated_msg = decompress(b64decode(message), -MAX_WBITS)
-        return json.loads(deflated_msg.decode())
+        return json.loads(deflated_msg.decode(), parse_float=Decimal)
 
     # Create debug message handler.
     async def on_debug(self, **msg):
@@ -64,12 +67,27 @@ class BittrexWebsockets(ContinuousDataAPI):
         # print(msg)
         if 'R' in msg and type(msg['R']) is not bool:
             decoded_msg = self.process_message(msg['R'])
+            market_name = decoded_msg['M'].replace('-', '_')
             # self.market_nonce_numbers[decoded_msg['M'].replace('-', '_')] = int(decoded_msg['N'])
-            self.market_queryExchangeState_nonce[decoded_msg['M'].replace('-', '_')] = int(decoded_msg['N'])
+            self.market_queryExchangeState_nonce[market_name] = int(decoded_msg['N'])
             # logger.debug(decoded_msg)
             # print(decoded_msg['N'])
             # print(int(decoded_msg['N']))
-            logger.debug('Received queryExchangeState for market {}. Nonce: {}'.format(decoded_msg['M'].replace('-', '_'), int(decoded_msg['N'])))
+            logger.debug('Received queryExchangeState for market {}. Nonce: {}'.format(market_name, int(decoded_msg['N'])))
+
+            buy_orders = collections.OrderedDict()
+            sell_orders = collections.OrderedDict()
+            for buy_order in decoded_msg['Z']:
+                assert(Decimal(buy_order['R']) not in buy_orders)
+                buy_orders[Decimal(buy_order['R'])] = Decimal(buy_order['Q'])
+
+            for sell_order in decoded_msg['S']:
+                assert(Decimal(sell_order['R']) not in sell_orders)
+                sell_orders[Decimal(sell_order['R'])] = Decimal(sell_order['Q'])
+
+            self.order_books[market_name] = OrderBook(Exchange('BITTREX'), Pair(market_name))
+            self.order_books[market_name].set_initial_orders(sell_orders, buy_orders)
+            self.order_books[market_name].save_order_book()
 
 
     # Create error handler
@@ -112,9 +130,10 @@ class BittrexWebsockets(ContinuousDataAPI):
         DELTA_TYPES = {0: 'ADD', 1: 'REMOVE', 2: 'UPDATE'}
 
         json = self.process_message(msg[0])
+        logger.debug(json)
         market_name = json['M'].replace('-', '_')
         if market_name not in self.market_queryExchangeState_nonce:
-            logger.debug('Nonce for market {} not set yet. This means the order book snapshot not yet received. Caching this trade.'.format(market_name))
+            logger.debug('Nonce for market {} not set yet. This means the order book snapshot not yet received. Caching this update {}.'.format(market_name, json))
             if market_name not in self.cached_received_exchange_deltas:
                 self.cached_received_exchange_deltas[market_name] = []
 
@@ -136,47 +155,75 @@ class BittrexWebsockets(ContinuousDataAPI):
                         assert(int(cached_delta['N']) == last_cached_delta_nonce + 1)  # Cached deltas skipped a nonce
                     if int(cached_delta['N']) > self.market_queryExchangeState_nonce[market_name]:
                         deltas_to_execute.append(cached_delta)
-                        print("Adding one delta to execute with nonce: {}. Snapshot nonce: {}".format(int(cached_delta['N']), self.market_queryExchangeState_nonce[market_name]))
+                        print("Adding one delta to execute with nonce: {} for {}. Snapshot nonce: {}".format(int(cached_delta['N']), market_name, self.market_queryExchangeState_nonce[market_name]))
 
         if no_cached_entries and market_name not in self.market_nonce_numbers:
             # If there were no cached entries but this is the first trade after acquiring book snapshot, then make sure trade lines up with snapshot nonce.
+            logger.debug('No cached entried and first trade after acquiring book snapshot.')
             assert(self.market_queryExchangeState_nonce[market_name] == int(json['N'])-1)
         else:
             if len(deltas_to_execute) > 0:
+                logger.debug('Making sure cached updates line up with received updated')
                 assert(int(deltas_to_execute[-1]['N']) == int(json['N'])-1)  # Make sure that cached updates line up with the received update.
             else:
+                # logger.debug(no_cached_entries)
+                # logger.debug(str(deltas_to_execute))
+                # logger.debug('Making sure update nonce lines up with last update')
                 assert(self.market_nonce_numbers[market_name] == int(json['N'])-1)  # Make sure that update nonce lines up with last update.
 
 
-        ############
-
-
         # IF deltas_to_execute then execute them.
+        if len(deltas_to_execute) > 0:
+            logger.debug('Have deltas_to_execute for {}'.format(market_name))
 
-
-        ###########
         self.market_nonce_numbers[market_name] = int(json['N'])
 
-        for fill in json['f']:  # In fills
-            buy = None
-            if fill['OT'] == 'SELL':
-                buy = False
-            elif fill['OT'] == 'BUY':
-                buy = True
+        for queryExchangeState in deltas_to_execute + [json]:
+            # Fills need to come first because if an order is fulfilled fully then it will be removed in the same update.
 
-            # Since Bittrex returns with a resolution of one MILLISECOND, we need to convert to nanosecond resolution to avoid overwrites in influxdb.
-            # To prevent the overwrites we need to keep the second that bittrex return to us but write our own nanosecond time
-            # float('1e+6') is how many nanoseconds is in one millisecond since Bittrex returns seconds
-            frac, whole = math.modf(time.time_ns() / float('1e+6'))  # Convert time nanoseconds to seconds and get the fraction part
-            timestamp = int((fill['T'] + frac) * float('1e+6'))  # Take bittrex timestamp add the fraction of nanoseconds onto it and convert to nanoseconds.
+            #
+            # Note: Might need to execute adds before trades for the same proiblem.
+            #
+            for fill in queryExchangeState['f']:  # In fills
+                buy = None
+                if fill['OT'] == 'SELL':
+                    buy = False
+                elif fill['OT'] == 'BUY':
+                    buy = True
 
-            trade = TradeInfo(Exchange('BITTREX'),
-                              Pair(json['M'].replace('-', '_')),
-                              buy,
-                              float(fill['Q']),
-                              float(fill['R']),
-                              timestamp=timestamp)
-            self.write_trade(trade)
+                # Since Bittrex returns with a resolution of one MILLISECOND, we need to convert to nanosecond resolution to avoid overwrites in influxdb.
+                # To prevent the overwrites we need to keep the second that bittrex return to us but write our own nanosecond time
+                # float('1e+6') is how many nanoseconds is in one millisecond since Bittrex returns seconds
+                frac, whole = math.modf(time.time_ns() / float('1e+6'))  # Convert time nanoseconds to seconds and get the fraction part
+                timestamp = int((fill['T'] + frac) * float('1e+6'))  # Take bittrex timestamp add the fraction of nanoseconds onto it and convert to nanoseconds.
+
+                trade = TradeInfo(Exchange('BITTREX'),
+                                  Pair(json['M'].replace('-', '_')),
+                                  buy,
+                                  float(fill['Q']),
+                                  float(fill['R']),
+                                  timestamp=timestamp)
+                self.order_books[market_name].update_using_trade(buy, Decimal(fill['R']), Decimal(fill['Q']))
+                self.write_trade(trade)
+
+            for buy_order in queryExchangeState['Z']:
+                if int(buy_order['TY']) == 0: # Add
+                    self.order_books[market_name].add_order(True, Decimal(buy_order['R']), Decimal(buy_order['Q']))
+                if int(buy_order['TY']) == 1: # Remove
+                    self.order_books[market_name].remove_order(True, Decimal(buy_order['R']))
+                if int(buy_order['TY']) == 2: # Update
+                    self.order_books[market_name].set_order(True, Decimal(buy_order['R']), Decimal(buy_order['Q']))
+
+            for sell_order in queryExchangeState['S']:
+                if int(sell_order['TY']) == 0: # Add
+                    self.order_books[market_name].add_order(False, Decimal(sell_order['R']), Decimal(sell_order['Q']))
+                if int(sell_order['TY']) == 1: # Remove
+                    self.order_books[market_name].remove_order(False, Decimal(sell_order['R']))
+                if int(sell_order['TY']) == 2: # Update
+                    self.order_books[market_name].set_order(False, Decimal(sell_order['R']), Decimal(sell_order['Q']))
+
+        self.order_books[market_name].save_order_book()
+
 
     def run(self):
         """
@@ -202,9 +249,10 @@ class BittrexWebsockets(ContinuousDataAPI):
             hub.server.invoke('SubscribeToExchangeDeltas', pair.pair.replace('_', '-'))
             hub.server.invoke('queryExchangeState', pair.pair.replace('_', '-'))
             i += 1
-
-            if i > 3:
-                break
+            # break
+            #
+            # if i > 5:
+            #     break
 
 
         # Start the client

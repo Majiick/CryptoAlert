@@ -1,6 +1,8 @@
 import postgresql_init
 import zmq
 from price_point import PricePoint
+from volume_point import VolumePoint
+from price_percentage import PricePercentage
 from alert import Alert
 from typing import List, Type, Dict
 from mlogging import logger
@@ -23,6 +25,8 @@ pub_socketio_channel.bind('tcp://0.0.0.0:28000')
 while True:
     alerts: List[Alert] = []
     alerts.extend(PricePoint.get_all_from_db())
+    alerts.extend(VolumePoint.get_all_from_db())
+    alerts.extend(PricePercentage.get_all_from_db())
     json = workers_socket.recv_json()  # This is a data_api.py TradeInfo JSON
     logger.debug('Alert generation received new point: ' + str(json))
 
@@ -52,7 +56,7 @@ while True:
                     for notification in notifications:
                         notification.notify()
 
-                    logger.info('pp fired off')
+                    logger.info('pp fired off {} {}'.format(type(alert), alert.__dict__))
                     pub_socketio_channel.send_json({'measurement': 'alert', 'alert': 'price_point', 'price_point': alert.__dict__, 'trade': json[0]})
                     alert.mark_fulfilled()
 

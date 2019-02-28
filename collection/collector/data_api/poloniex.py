@@ -184,6 +184,7 @@ class PoloniexWebsocket(ContinuousDataAPI):
             # rank += 1
 
         self.order_books[pair_name].set_initial_orders(sell_orders, buy_orders)
+        self.order_books[pair_name].save_order_book()
         # db_client.write_points(writes, time_precision='n')
 
     async def write_order_updates(self, order_updates, pair_id: int, jsonraw=None):
@@ -249,6 +250,8 @@ class PoloniexWebsocket(ContinuousDataAPI):
                 buy = False
 
             self.order_books[pair_name].remove_order(buy, Decimal(removal_update[2]))
+
+        self.order_books[pair_name].save_order_book()
 
 
 

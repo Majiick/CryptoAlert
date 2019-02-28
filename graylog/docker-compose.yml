@@ -1,3 +1,9 @@
+#
+#
+#  Need to set REST IP in graylog config also.
+#
+#
+
 version: '3.5'
 
 services:

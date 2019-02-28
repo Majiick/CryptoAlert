@@ -23,7 +23,7 @@ def startup_queue():
     zmq_collector_starter_command_channel.bind("tcp://0.0.0.0:5556")
 
     ######################################################### TEMPORARY
-    zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': 'BITTREX'})
+    zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': 'POLONIEX'})
     # for exchange_name, _ in continuous_data_apis.items():
     #     zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': exchange_name})
 
@@ -126,7 +126,8 @@ def message_rate_calculation():
 
             for exchange, messages in rates.items():
                 if messages == 0:
-                    logger.error('Exchange {} had 0 messages in past 60 seconds. Sending restart command and recording interruption.'.format(exchange))
+                    pass
+                    # logger.error('Exchange {} had 0 messages in past 60 seconds. Sending restart command and recording interruption.'.format(exchange))
                     # restart_worker(exchange)
                     # record_continuous_worker_interruption(exchange, int(time.time())-60, int(time.time()))  ## TEMPORARY
 
