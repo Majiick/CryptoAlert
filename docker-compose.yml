@@ -61,14 +61,14 @@ services:
                         - "5432:5432"
                 networks:
                         - globalnet
-        influxdb:
-                image: "influxdb"
-                ports:
-                        - "8086:8086"
-                volumes:
-                        - influx-data:/var/lib/influxdb
-                networks:
-                        - globalnet
+#        influxdb:
+#                image: "influxdb"
+#                ports:
+#                        - "8086:8086"
+#                volumes:
+#                        - influx-data:/var/lib/influxdb
+#                networks:
+#                        - globalnet
 
         nginx:
                 image: "nginx"

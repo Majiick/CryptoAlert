@@ -6,8 +6,6 @@ from postgresql_init import engine
 from sqlalchemy.sql import text
 from typing import List, Type, Dict
 from mlogging import logger
-from influxdb_init import db_client
-import influxdb
 import time
 
 
@@ -31,10 +29,9 @@ class PricePercentage(Alert):
         self.time_frame = time_frame
 
     def trigger(self, trade) -> bool:
-        try:
-            time_started_query = time.time()
-            """
-            NEED TO TAKE INTO ACCOUNT BUY AND SELL?
+        time_started_query = time.time()
+        """
+        NEED TO TAKE INTO ACCOUNT BUY AND SELL?
 
 
 
@@ -44,65 +41,61 @@ class PricePercentage(Alert):
 
 
 
-            """
-            if (trade['tags']['pair'].lower() == self.pair.lower() or self.pair == '*') and (trade['tags']['exchange'].lower() == self.exchange.lower() or self.exchange == '*'):
-                # Result: ResultSet({'('trade', None)': [{'time': '2019-02-28T10:58:08.306845796Z', 'max': 1.67000003, 'min': 1.67000003}]})
-                # After list(result): [[{'time': '2019-02-28T11:01:11.533978751Z', 'max': 0.00042362, 'min': 0.00042362}]]
-                with engine.begin() as conn:
-                    # Assuming both epoch and time frame are in seconds and trade_time is in nano seconds.
-                    print(int(self.time_frame))
-                    result = conn.execute(text("SELECT max(price), min(price) FROM TRADE WHERE trade_time > (extract(epoch from now()) * 1000000000) - cast(1 as bigint)*:time_frame*1000000000 AND market=:market AND exchange=:exchange;"),
-                                 time_frame=int(self.time_frame),
-                                 market=trade['tags']['pair'],
-                                 exchange=trade['tags']['exchange'])
-                    result = result.fetchone()
+        """
+        if (trade['tags']['pair'].lower() == self.pair.lower() or self.pair == '*') and (trade['tags']['exchange'].lower() == self.exchange.lower() or self.exchange == '*'):
+            # Result: ResultSet({'('trade', None)': [{'time': '2019-02-28T10:58:08.306845796Z', 'max': 1.67000003, 'min': 1.67000003}]})
+            # After list(result): [[{'time': '2019-02-28T11:01:11.533978751Z', 'max': 0.00042362, 'min': 0.00042362}]]
+            with engine.begin() as conn:
+                # Assuming both epoch and time frame are in seconds and trade_time is in nano seconds.
+                print(int(self.time_frame))
+                result = conn.execute(text("SELECT max(price), min(price) FROM TRADE WHERE trade_time > (extract(epoch from now()) * 1000000000) - cast(1 as bigint)*:time_frame*1000000000 AND market=:market AND exchange=:exchange;"),
+                             time_frame=int(self.time_frame),
+                             market=trade['tags']['pair'],
+                             exchange=trade['tags']['exchange'])
+                result = result.fetchone()
 
-                print(result)
-                if result[0] is None:
-                    logger.warning('No result for price percentage query. {}'.format(self.__dict__))
-                    return False
-                max_price = float(result[0])
-                min_price = float(result[1])
-                # result = db_client.query("SELECT max(price), min(price) FROM trade WHERE time > now() - {}s and exchange='{}' and pair='{}';".format(int(self.time_frame), trade['tags']['exchange'], trade['tags']['pair']))
-                # result = list(result)
-                # if not result:
-                #     logger.warning('No result for query {}'.format("SELECT max(price), min(price) FROM trade WHERE time > now() - {}s and exchange='{}' and pair='{}';".format(int(self.time_frame), trade['tags']['exchange'], trade['tags']['pair'])))
-                #     return False
-                # logger.debug(result)
-                # max_price = float(result[0][0]['max'])
-                # min_price = float(result[0][0]['min'])
+            print(result)
+            if result[0] is None:
+                logger.warning('No result for price percentage query. {}'.format(self.__dict__))
+                return False
+            max_price = float(result[0])
+            min_price = float(result[1])
+            # result = db_client.query("SELECT max(price), min(price) FROM trade WHERE time > now() - {}s and exchange='{}' and pair='{}';".format(int(self.time_frame), trade['tags']['exchange'], trade['tags']['pair']))
+            # result = list(result)
+            # if not result:
+            #     logger.warning('No result for query {}'.format("SELECT max(price), min(price) FROM trade WHERE time > now() - {}s and exchange='{}' and pair='{}';".format(int(self.time_frame), trade['tags']['exchange'], trade['tags']['pair'])))
+            #     return False
+            # logger.debug(result)
+            # max_price = float(result[0][0]['max'])
+            # min_price = float(result[0][0]['min'])
 
-                ret = False
-                if self.direction == 'up':
-                    percentage_diff = 100.0 * (trade['fields']['price'] - min_price) / min_price
-                    logger.debug(trade['fields']['price'])
-                    logger.debug(min_price)
-                    logger.debug(percentage_diff)
-                    logger.debug(trade)
-                    logger.debug('up')
-                    if percentage_diff > self.point:
-                        ret = True
-                elif self.direction == 'down':
-                    percentage_diff = 100.0 * (trade['fields']['price'] - max_price) / max_price
-                    logger.debug(trade['fields']['price'])
-                    logger.debug(max_price)
-                    logger.debug(percentage_diff)
-                    logger.debug(trade)
-                    logger.debug('down')
-                    if abs(percentage_diff) > self.point:
-                        ret = True
+            ret = False
+            if self.direction == 'up':
+                percentage_diff = 100.0 * (trade['fields']['price'] - min_price) / min_price
+                logger.debug(trade['fields']['price'])
+                logger.debug(min_price)
+                logger.debug(percentage_diff)
+                logger.debug(trade)
+                logger.debug('up')
+                if percentage_diff > self.point:
+                    ret = True
+            elif self.direction == 'down':
+                percentage_diff = 100.0 * (trade['fields']['price'] - max_price) / max_price
+                logger.debug(trade['fields']['price'])
+                logger.debug(max_price)
+                logger.debug(percentage_diff)
+                logger.debug(trade)
+                logger.debug('down')
+                if abs(percentage_diff) > self.point:
+                    ret = True
 
 
-            time_to_query = time.time() - time_started_query
-            logger.debug('Took {} to query'.format(time_to_query))
-            if ret:
-                for x in range(20):
-                    logger.debug('truyu')
-            return ret
-        except influxdb.exceptions.InfluxDBClientError as e:
-            logger.error('InfluxDB error: ' + str(e) + ' data: ' + str(trade.get_as_json_dict()))
-
-        return False
+        time_to_query = time.time() - time_started_query
+        logger.debug('Took {} to query'.format(time_to_query))
+        if ret:
+            for x in range(20):
+                logger.debug('truyu')
+        return ret
 
     @staticmethod
     def get_all_from_db() -> List[Alert]:

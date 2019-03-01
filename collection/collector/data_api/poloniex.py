@@ -6,8 +6,6 @@ import websockets
 import asyncio
 import time
 import zmq
-from influxdb import InfluxDBClient
-from influxdb_init import db_client
 import mlogging
 from mlogging import logger
 import sys

@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 from typing import List, Type, Dict, Tuple
 import time
 import zmq
-import influxdb
-from influxdb_init import db_client
 from mlogging import logger
 import collections
 from decimal import *
@@ -52,7 +50,7 @@ class TradeInfo:
 
     def get_as_json_dict(self):
         """
-        :return: Python dict object that can be interpreted as JSON and written to influxdb
+        :return: Python dict object that can be interpreted as JSON.
         """
         return [
                 {
@@ -255,7 +253,7 @@ class ContinuousDataAPI(ABC):
         assert (len(pairs) > 0)
 
         self.pairs = pairs
-        self.time_last_written_trade = time.time()  # Last write that happened to InfluxDB in epoch seconds. Used when service interruption happens inside to record it.
+        self.time_last_written_trade = time.time()  # Last write that happened to Postgres in epoch seconds. Used when service interruption happens inside to record it.
 
     @abstractmethod
     async def run_blocking(self):
@@ -308,9 +306,9 @@ class ContinuousDataAPI(ABC):
                          size=trade.size)
         time_to_write = time.time() - time_started_send
         if time_to_write > 0.01:
-            logger.warning('It took {} to push trade to collector publisher and write to influxdb'.format(time_to_write))
+            logger.warning('It took {} to push trade to collector publisher and write to postgres'.format(time_to_write))
         else:
-            logger.debug('It took {} to push trade to collector publisher and write to influxdb'.format(time_to_write))
+            logger.debug('It took {} to push trade to collector publisher and write to postgres'.format(time_to_write))
 
     @staticmethod
     @abstractmethod

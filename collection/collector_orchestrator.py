@@ -1,14 +1,11 @@
 import zmq
 import pandas as pd
-from influxdb import DataFrameClient
 import threading
 from data_source import continuous_data_apis
 from mlogging import logger
 from typing import List, Type, Dict
 from data_api import Exchange
 import time
-import influxdb
-from influxdb_init import db_client
 
 COLLECT_HISTORICAL_DATA_AFTER = int(time.time())
 
@@ -58,7 +55,8 @@ def record_continuous_worker_interruption(exchange: str, start_time: int, end_ti
     }]
 
     logger.error('Recording continuous worker interruption: ' + str(write))
-    db_client.write_points(write, time_precision='n')
+    # TODO WRITE TO POSTGRES
+    # db_client.write_points(write, time_precision='n')
 
 
 def message_rate_calculation():

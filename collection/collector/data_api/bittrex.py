@@ -191,7 +191,7 @@ class BittrexWebsockets(ContinuousDataAPI):
                 elif fill['OT'] == 'BUY':
                     buy = True
 
-                # Since Bittrex returns with a resolution of one MILLISECOND, we need to convert to nanosecond resolution to avoid overwrites in influxdb.
+                # Since Bittrex returns with a resolution of one MILLISECOND, we need to convert to nanosecond resolution to avoid overwrites in postgres.
                 # To prevent the overwrites we need to keep the second that bittrex return to us but write our own nanosecond time
                 # float('1e+6') is how many nanoseconds is in one millisecond since Bittrex returns seconds
                 frac, whole = math.modf(time.time_ns() / float('1e+6'))  # Convert time nanoseconds to seconds and get the fraction part

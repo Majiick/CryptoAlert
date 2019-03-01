@@ -1,7 +1,6 @@
 import zmq
 import pandas as pd
 import collector_publisher
-from influxdb import DataFrameClient
 from multiprocessing import Process
 from typing import Type, List, Tuple, Dict
 from data_api import ContinuousDataAPI
