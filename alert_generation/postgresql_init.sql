@@ -49,3 +49,12 @@ CREATE TABLE IF NOT EXISTS PRICE_PERCENTAGE_ALERT(
   direction VARCHAR(20) NOT NULL CHECK (direction IN ('up', 'down')),
   time_frame REAL NOT NULL
 ) INHERITS(ALERT);
+
+CREATE UNLOGGED TABLE IF NOT EXISTS ORDER_BOOK (
+  snapshot_time BIGINT NOT NULL,
+  exchange TEXT NOT NULL,
+  market TEXT NOT NULL,
+  book JSON NOT NULL,
+
+  PRIMARY KEY(snapshot_time, exchange, market)
+);

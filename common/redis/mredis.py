@@ -17,6 +17,7 @@ import json
 from typing import List, Type, Dict
 from mlogging import logger
 import simplejson
+import time
 
 MAX_ORDER_BOOK_HISTORY = 100
 
@@ -29,5 +30,13 @@ def save_order_book(order_book):
     assert['sell' in json_dict]
     assert['buy' in json_dict]
     json_string = simplejson.dumps(json_dict, use_decimal=True)
+    time_started_send = time.time()
     r.lpush(order_book.exchange.name + order_book.pair.pair, json_string)
     r.ltrim(order_book.exchange.name + order_book.pair.pair, 0, MAX_ORDER_BOOK_HISTORY)
+    time_ended = time.time()
+
+    print('Writing orderbook to redis took {}'.format(time_ended - time_started_send))
+    time_started_send = time.time()
+    book = r.lindex(order_book.exchange.name + order_book.pair.pair, 0)
+    time_ended = time.time()
+    print('Reading orderbook from redis took {}'.format(time_ended - time_started_send))
