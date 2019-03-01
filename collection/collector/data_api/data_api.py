@@ -91,7 +91,7 @@ class OrderBook:
         assert(price > 0)
         assert(new_size > 0)
 
-        logger.debug(self.pair.pair + " Setting order at price " + str(price))
+        # logger.debug(self.pair.pair + " Setting order at price " + str(price))
         if buy:
             assert(price in self.buy_orders)
             self.buy_orders[price] = new_size
@@ -108,18 +108,18 @@ class OrderBook:
             if price not in self.buy_orders:
                 self.buy_orders[price] = Decimal(0)
             self.buy_orders[price] += size
-            logger.debug(self.pair.pair + " Adding buy order at price " + str(price))
+            # logger.debug(self.pair.pair + " Adding buy order at price " + str(price))
         else:
             if price not in self.sell_orders:
                 self.sell_orders[price] = Decimal(0)
             self.sell_orders[price] += size
-            logger.debug(self.pair.pair + "Adding sell order at price " + str(price))
+            # logger.debug(self.pair.pair + "Adding sell order at price " + str(price))
 
     def remove_order(self, buy: bool, price: Decimal):
         """
         Removes order at price. Removes fully.
         """
-        logger.debug(self.pair.pair + " Removing order at price " + str(price) + " buy:{}".format(buy))
+        # logger.debug(self.pair.pair + " Removing order at price " + str(price) + " buy:{}".format(buy))
         assert(self.initial_orders_set)
         if buy:
             if price in self.buy_orders:
@@ -185,8 +185,9 @@ class OrderBook:
                          market=self.pair.pair,
                          book=json_string)
         time_ended = time.time()
+        # print('Writing orderbook to postgres took {}'.format(time_ended - time_started_send))
         # write_times.append(time_ended - time_started_send)
-        print('Writing orderbook to postgres took {}'.format(time_ended - time_started_send))
+
         # print('Postgres Average write time {}'.format(statistics.mean(write_times)))
 
         # with engine.begin() as conn:
@@ -273,7 +274,7 @@ class ContinuousDataAPI(ABC):
     def write_trade(self, trade: TradeInfo):
         assert(isinstance(trade, TradeInfo))
 
-        time_started_send = int(time.time())
+
         zmq_context = zmq.Context()
         zmq_socket_collector_publisher = zmq_context.socket(zmq.PUSH)
         zmq_socket_collector_publisher.connect("tcp://localhost:27018")
@@ -281,14 +282,32 @@ class ContinuousDataAPI(ABC):
         # logger.info(trade.get_as_json_dict())
         # assert(db_client.write_points(trade.get_as_json_dict(), time_precision='n'))  # I have benchmarked what takes the longest here, and this line is the culprit where we write to influxdb.
         ######################################################################## TEMPORARY
-        try:
-            db_client.write_points(trade.get_as_json_dict(), time_precision='n')
-            self.time_last_written_trade = int(time.time())
-        except influxdb.exceptions.InfluxDBClientError as e:
-            logger.error('InfluxDB error: ' + str(e) + ' data: ' + str(trade.get_as_json_dict()))
+        # time_started_send = time.time()
+        # try:
+        #     db_client.write_points(trade.get_as_json_dict(), time_precision='n')
+        #     self.time_last_written_trade = int(time.time())
+        # except influxdb.exceptions.InfluxDBClientError as e:
+        #     logger.error('InfluxDB error: ' + str(e) + ' data: ' + str(trade.get_as_json_dict()))
+        #
+        #
+        # time_to_write = time.time() - time_started_send
+        # print('influxdb took {}'.format(time_to_write))
+        # if time_to_write > 0.1:
+        #     logger.warning('It took {} to push trade to collector publisher and write to influxdb'.format(time_to_write))
+        # else:
+        #     logger.debug('It took {} to push trade to collector publisher and write to influxdb'.format(time_to_write))
 
+        time_started_send = time.time()
+        with engine.begin() as conn:
+            conn.execute(text("INSERT INTO TRADE (trade_time, exchange, market, buy, price, size) VALUES (:trade_time, :exchange, :market, :buy, :price, :size)"),
+                         trade_time=trade.timestamp,
+                         exchange=trade.exchange.name,
+                         market=trade.pair.pair,
+                         buy=trade.buy,
+                         price=trade.price,
+                         size=trade.size)
         time_to_write = time.time() - time_started_send
-        if time_to_write > 0.1:
+        if time_to_write > 0.01:
             logger.warning('It took {} to push trade to collector publisher and write to influxdb'.format(time_to_write))
         else:
             logger.debug('It took {} to push trade to collector publisher and write to influxdb'.format(time_to_write))

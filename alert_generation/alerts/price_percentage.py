@@ -34,7 +34,7 @@ class PricePercentage(Alert):
         try:
             time_started_query = time.time()
             """
-            WARNING THIS IS SQL INJECTABLE
+            NEED TO TAKE INTO ACCOUNT BUY AND SELL?
 
 
 
@@ -48,18 +48,33 @@ class PricePercentage(Alert):
             if (trade['tags']['pair'].lower() == self.pair.lower() or self.pair == '*') and (trade['tags']['exchange'].lower() == self.exchange.lower() or self.exchange == '*'):
                 # Result: ResultSet({'('trade', None)': [{'time': '2019-02-28T10:58:08.306845796Z', 'max': 1.67000003, 'min': 1.67000003}]})
                 # After list(result): [[{'time': '2019-02-28T11:01:11.533978751Z', 'max': 0.00042362, 'min': 0.00042362}]]
-                result = db_client.query("SELECT max(price), min(price) FROM trade WHERE time > now() - {}s and exchange='{}' and pair='{}';".format(int(self.time_frame), trade['tags']['exchange'], trade['tags']['pair']))
-                result = list(result)
-                if not result:
-                    logger.warning('No result for query {}'.format("SELECT max(price), min(price) FROM trade WHERE time > now() - {}s and exchange='{}' and pair='{}';".format(int(self.time_frame), trade['tags']['exchange'], trade['tags']['pair'])))
+                with engine.begin() as conn:
+                    # Assuming both epoch and time frame are in seconds and trade_time is in nano seconds.
+                    print(int(self.time_frame))
+                    result = conn.execute(text("SELECT max(price), min(price) FROM TRADE WHERE trade_time > (extract(epoch from now()) * 1000000000) - cast(1 as bigint)*:time_frame*1000000000 AND market=:market AND exchange=:exchange;"),
+                                 time_frame=int(self.time_frame),
+                                 market=trade['tags']['pair'],
+                                 exchange=trade['tags']['exchange'])
+                    result = result.fetchone()
+
+                print(result)
+                if result[0] is None:
+                    logger.warning('No result for price percentage query. {}'.format(self.__dict__))
                     return False
-                logger.debug(result)
-                max_price = float(result[0][0]['max'])
-                min_price = float(result[0][0]['min'])
+                max_price = float(result[0])
+                min_price = float(result[1])
+                # result = db_client.query("SELECT max(price), min(price) FROM trade WHERE time > now() - {}s and exchange='{}' and pair='{}';".format(int(self.time_frame), trade['tags']['exchange'], trade['tags']['pair']))
+                # result = list(result)
+                # if not result:
+                #     logger.warning('No result for query {}'.format("SELECT max(price), min(price) FROM trade WHERE time > now() - {}s and exchange='{}' and pair='{}';".format(int(self.time_frame), trade['tags']['exchange'], trade['tags']['pair'])))
+                #     return False
+                # logger.debug(result)
+                # max_price = float(result[0][0]['max'])
+                # min_price = float(result[0][0]['min'])
 
                 ret = False
                 if self.direction == 'up':
-                    percentage_diff = 100 * (trade['fields']['price'] - min_price) / min_price
+                    percentage_diff = 100.0 * (trade['fields']['price'] - min_price) / min_price
                     logger.debug(trade['fields']['price'])
                     logger.debug(min_price)
                     logger.debug(percentage_diff)
@@ -68,7 +83,7 @@ class PricePercentage(Alert):
                     if percentage_diff > self.point:
                         ret = True
                 elif self.direction == 'down':
-                    percentage_diff = 100 * (trade['fields']['price'] - max_price) / max_price
+                    percentage_diff = 100.0 * (trade['fields']['price'] - max_price) / max_price
                     logger.debug(trade['fields']['price'])
                     logger.debug(max_price)
                     logger.debug(percentage_diff)
