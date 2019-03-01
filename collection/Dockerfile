@@ -5,18 +5,18 @@ COPY $HOST_DOCKERFILE_DIR/requirements.txt .
 COPY $HOST_DOCKERFILE_DIR/collector/requirements.txt collector_requirements.txt
 COPY /common/logging/requirements.txt logging_requirements.txt
 COPY /common/influxdb/requirements.txt influxdb_requirements.txt
-COPY /common/redis/requirements.txt redis_requirements.txt
+COPY /common/postgres/requirements.txt postgres_requirements.txt
 RUN pip install -r logging_requirements.txt
 RUN pip install -r requirements.txt
 RUN pip install -r collector_requirements.txt
 RUN pip install -r influxdb_requirements.txt
-RUN pip install -r redis_requirements.txt
+RUN pip install -r postgres_requirements.txt
 RUN pip install mypy
 
 ADD $HOST_DOCKERFILE_DIR /code
 COPY /common/logging/ /code
 COPY /common/influxdb/ /code
-COPY /common/redis/ /code
+COPY /common/postgres/ /code
 WORKDIR /code
 ENV PYTHONPATH "${PYTHONPATH}:/code"
 ENV PYTHONPATH "${PYTHONPATH}:/code/collector"

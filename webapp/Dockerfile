@@ -18,9 +18,14 @@ ADD $HOST_DOCKERFILE_DIR /code
 RUN npm run-script build
 
 
+
 WORKDIR /code
+COPY /common/postgres/requirements.txt postgres_requirements.txt
+RUN pip install -r postgres_requirements.txt
 RUN pip install -r requirements.txt
 RUN pip install mypy
+
+COPY /common/postgres/ /code/
 
 
 WORKDIR /code

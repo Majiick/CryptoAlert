@@ -12,7 +12,6 @@ import mlogging
 from mlogging import logger
 import sys
 import traceback
-import mredis
 import collections
 from decimal import *
 

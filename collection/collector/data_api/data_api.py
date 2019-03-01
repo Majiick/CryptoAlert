@@ -6,18 +6,13 @@ import influxdb
 from influxdb_init import db_client
 from mlogging import logger
 import collections
-import mredis
 from decimal import *
 import json
 import simplejson
-import sqlalchemy
-import psycopg2
 from sqlalchemy.sql import text
 import statistics
+from postgres_init import engine
 
-engine_tmp = sqlalchemy.create_engine('postgresql+psycopg2://postgres:password@postgres')
-write_times = []
-read_times = []
 
 class Pair:
     """
@@ -176,12 +171,11 @@ class OrderBook:
 
     def save_order_book(self):
         """
-        Saves order book to Redis.
+        Saves order book to Postgres.
         Needs to be called by the workers.
         """
         assert(self.initial_orders_set)
-        mredis.save_order_book(self)
-        with engine_tmp.begin() as conn:
+        with engine.begin() as conn:
             json = self.get_as_json_dict()
             json_string = simplejson.dumps(json, use_decimal=True)
             time_started_send = time.time()
@@ -191,21 +185,21 @@ class OrderBook:
                          market=self.pair.pair,
                          book=json_string)
         time_ended = time.time()
-        write_times.append(time_ended - time_started_send)
+        # write_times.append(time_ended - time_started_send)
         print('Writing orderbook to postgres took {}'.format(time_ended - time_started_send))
-        print('Postgres Average write time {}'.format(statistics.mean(write_times)))
+        # print('Postgres Average write time {}'.format(statistics.mean(write_times)))
 
-        with engine_tmp.begin() as conn:
-            json = self.get_as_json_dict()
-            json_string = simplejson.dumps(json, use_decimal=True)
-            time_started_send = time.time()
-            result = conn.execute('SELECT * FROM ORDER_BOOK LIMIT 1')
-            result = result.fetchone()
-            # print(result)
-        time_ended = time.time()
-        read_times.append(time_ended - time_started_send)
-        print('Postgres Average read time {}'.format(statistics.mean(read_times)))
-        print('Reading orderbook from postgres took {}'.format(time_ended - time_started_send))
+        # with engine.begin() as conn:
+        #     json = self.get_as_json_dict()
+        #     json_string = simplejson.dumps(json, use_decimal=True)
+        #     time_started_send = time.time()
+        #     result = conn.execute('SELECT * FROM ORDER_BOOK LIMIT 1')
+        #     result = result.fetchone()
+        #     # print(result)
+        # time_ended = time.time()
+        # read_times.append(time_ended - time_started_send)
+        # print('Postgres Average read time {}'.format(statistics.mean(read_times)))
+        # print('Reading orderbook from postgres took {}'.format(time_ended - time_started_send))
 
 
 

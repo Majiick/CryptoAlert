@@ -4,7 +4,7 @@ import pandas as pd
 from influxdb import DataFrameClient
 from flask_login import LoginManager, login_user, UserMixin, login_required, current_user
 from typing import List, Dict, Type
-from postgresql_init import engine
+from postgres_init import engine
 import uuid
 from sqlalchemy.sql import text
 from flask_jwt import JWT, jwt_required, current_identity
