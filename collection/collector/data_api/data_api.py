@@ -12,6 +12,12 @@ import statistics
 from postgres_init import engine
 
 
+'''
+Marks the order book KEEP to true every {KEEP_ORDERBOOK_SECOND_INTERVAL} seconds.
+The order books that are not marked kept are deleted after a while, but we still will have the order book every {KEEP_ORDERBOOK_SECOND_INTERVAL} seconds.
+'''
+KEEP_ORDERBOOK_SECOND_INTERVAL = 1
+
 class Pair:
     """
     A market pair in the form of <BaseCurrency>_<MarketCurrency> all capitalized
@@ -76,10 +82,13 @@ class OrderBook:
         self.sell_orders: Dict[Decimal, Decimal] = collections.OrderedDict()  # Sell and buy orders are a dict: price -> volume
         self.buy_orders: Dict[Decimal, Decimal] = collections.OrderedDict()
         self.initial_orders_set = False
+        self.time_last_written = 0  # Used for setting order_book.KEEP
 
     def set_initial_orders(self, sell_orders, buy_orders):
         # assert(len(sell_orders) > 0)
         # assert(len(buy_orders) > 0)
+        logger.debug(sell_orders)
+        logger.debug(buy_orders)
         self.sell_orders = sell_orders
         self.buy_orders = buy_orders
         self.initial_orders_set = True
@@ -89,7 +98,7 @@ class OrderBook:
         assert(price > 0)
         assert(new_size > 0)
 
-        # logger.debug(self.pair.pair + " Setting order at price " + str(price))
+        logger.debug(self.pair.pair + " Setting order at price " + str(price))
         if buy:
             assert(price in self.buy_orders)
             self.buy_orders[price] = new_size
@@ -106,18 +115,18 @@ class OrderBook:
             if price not in self.buy_orders:
                 self.buy_orders[price] = Decimal(0)
             self.buy_orders[price] += size
-            # logger.debug(self.pair.pair + " Adding buy order at price " + str(price))
+            logger.debug(self.pair.pair + " Adding buy order at price " + str(price))
         else:
             if price not in self.sell_orders:
                 self.sell_orders[price] = Decimal(0)
             self.sell_orders[price] += size
-            # logger.debug(self.pair.pair + "Adding sell order at price " + str(price))
+            logger.debug(self.pair.pair + "Adding sell order at price " + str(price))
 
     def remove_order(self, buy: bool, price: Decimal):
         """
         Removes order at price. Removes fully.
         """
-        # logger.debug(self.pair.pair + " Removing order at price " + str(price) + " buy:{}".format(buy))
+        logger.debug(self.pair.pair + " Removing order at price " + str(price) + " buy:{}".format(buy))
         assert(self.initial_orders_set)
         if buy:
             if price in self.buy_orders:
@@ -133,13 +142,14 @@ class OrderBook:
     def update_using_trade(self, buy: bool, price: Decimal, size: Decimal):
         assert(self.initial_orders_set)
 
-        # logger.debug('xD: ' + self.pair.pair + str(buy))
+        logger.debug('Updating using trade: ' + self.pair.pair + str(buy))
         if buy:  # If bought then sell order (or a part of it) is fulfilled and vice versa.
             # print(self.sell_orders)
             try:
                 self.sell_orders[price] -= size
                 assert(self.sell_orders[price] >= 0)
             except KeyError:
+                logger.error(self.buy_orders)
                 logger.error(self.sell_orders)
                 logger.error(price)
                 logger.error(list(self.sell_orders.keys())[0])
@@ -152,6 +162,7 @@ class OrderBook:
                 self.buy_orders[price] -= size
                 assert(self.buy_orders[price] >= 0)
             except KeyError:
+                logger.error(self.sell_orders)
                 logger.error(self.buy_orders)
                 logger.error(price)
                 logger.error(list(self.buy_orders.keys())[0])
@@ -173,15 +184,22 @@ class OrderBook:
         Needs to be called by the workers.
         """
         assert(self.initial_orders_set)
+        if time.time() - KEEP_ORDERBOOK_SECOND_INTERVAL > self.time_last_written:
+            keep = True
+        else:
+            keep = False
+        self.time_last_written = time.time()
         with engine.begin() as conn:
             json = self.get_as_json_dict()
             json_string = simplejson.dumps(json, use_decimal=True)
             time_started_send = time.time()
-            conn.execute(text("INSERT INTO ORDER_BOOK (snapshot_time, exchange, market, book) VALUES (:snapshot_time, :exchange, :market, :book)"),
+            conn.execute(text("INSERT INTO ORDER_BOOK (snapshot_time, exchange, market, book, keep) VALUES (:snapshot_time, :exchange, :market, :book, :keep)"),
                          snapshot_time=time.time_ns(),
                          exchange=self.exchange.name,
                          market=self.pair.pair,
-                         book=json_string)
+                         book=json_string,
+                         keep=keep)
+            self.time_last_written = time.time()
         time_ended = time.time()
         # print('Writing orderbook to postgres took {}'.format(time_ended - time_started_send))
         # write_times.append(time_ended - time_started_send)

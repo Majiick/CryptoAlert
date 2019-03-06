@@ -68,6 +68,7 @@ CREATE UNLOGGED TABLE IF NOT EXISTS ORDER_BOOK(
   exchange TEXT NOT NULL,
   market TEXT NOT NULL,
   book JSON NOT NULL,
+  keep BOOL NOT NULL,
 
   PRIMARY KEY(snapshot_time, exchange, market)
 );

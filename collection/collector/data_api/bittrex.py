@@ -16,6 +16,7 @@ import sys
 from decimal import *
 import traceback
 import collections
+import threading
 
 
 """
@@ -33,6 +34,35 @@ Query BTC-ETH market state.
 Apply cached deltas sequentially, starting with nonces greater than that received in step 4.
 """
 
+class QLock:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.waiters = collections.deque()
+        self.count = 0
+
+    def acquire(self):
+        self.lock.acquire()
+        if self.count:
+            new_lock = threading.Lock()
+            new_lock.acquire()
+            self.waiters.append(new_lock)
+            self.lock.release()
+            new_lock.acquire()
+            self.lock.acquire()
+        self.count += 1
+        self.lock.release()
+
+    def release(self):
+        with self.lock:
+            if not self.count:
+                raise ValueError("lock not acquired")
+            self.count -= 1
+            if self.waiters:
+                self.waiters.popleft().release()
+
+    def locked(self):
+        return self.count > 0
+
 class BittrexWebsockets(ContinuousDataAPI):
     def __init__(self, pairs: List[Pair]):
         super().__init__(pairs)
@@ -41,6 +71,8 @@ class BittrexWebsockets(ContinuousDataAPI):
         self.market_nonce_numbers: Dict[str, int] = {}
         self.cached_received_exchange_deltas: Dict[str, List[str]] = {}  # The exchange deltas that were received before getting the market snapshot.
         self.order_books: Dict[str, OrderBook] = {}
+        self.received_deltas: Dict[str, Any] = {}
+        self.mutexes: Dict[str, Any] = {}
 
     @staticmethod
     def get_all_pairs() -> List[Pair]:
@@ -95,7 +127,19 @@ class BittrexWebsockets(ContinuousDataAPI):
         logger.error('Bittrex continuous worker received error: ' + msg)
         assert(False)
 
+    # def process_market_deltas(self):
+    #     while True:
+    #         pass
+
     async def on_subscribe_to_exchange_deltas(self, msg):
+        sys.stdout.flush()
+        sys.stderr.flush()
+        # market_name = json['M'].replace('-', '_')
+        # json = self.process_message(msg[0])
+        # if market_name not in self.received_deltas:
+        #     self.received_deltas[market_name] = []
+        # self.received_deltas[market_name].append(json)
+        # return
         """
         msg example: {'M': 'BTC-XEM', 'N': 782391, 'Z': [{'TY': 2, 'R': 1.892e-05, 'Q': 3687.0}, {'TY': 2, 'R': 1.89e-05, 'Q': 5555.84218246}, {'TY': 2, 'R': 1.86e-05, 'Q': 4216.29131711}], 'S': [], 'f': [{'FI': 64912354, 'OT': 'SELL', 'R': 1.925e-05, 'Q': 156.903765, 'T': 1543424515903}]}
 
@@ -130,60 +174,137 @@ class BittrexWebsockets(ContinuousDataAPI):
         DELTA_TYPES = {0: 'ADD', 1: 'REMOVE', 2: 'UPDATE'}
 
         json = self.process_message(msg[0])
-        logger.debug(json)
+
         market_name = json['M'].replace('-', '_')
+        if market_name not in self.mutexes:
+            self.mutexes[market_name] = QLock()
+        self.mutexes[market_name].acquire()
+        logger.debug('Lock acquired for market {}'.format(market_name))
+        logger.debug(json)
+
         if market_name not in self.market_queryExchangeState_nonce:
             logger.debug('Nonce for market {} not set yet. This means the order book snapshot not yet received. Caching this update {}.'.format(market_name, json))
             if market_name not in self.cached_received_exchange_deltas:
                 self.cached_received_exchange_deltas[market_name] = []
 
             self.cached_received_exchange_deltas[market_name].append(json)
+            self.mutexes[market_name].release()
+            logger.debug('Lock released for market {}'.format(market_name))
             return
 
         deltas_to_execute = []
-        no_cached_entries = False
-        if market_name not in self.market_nonce_numbers:
-            # The market received first trade after acquiring the book snapshot. Execute cached trades with nonce greater than snapshot nonce.
-            if market_name not in self.cached_received_exchange_deltas:
-                # No cached entries.
-                no_cached_entries = True
-            else:
-                # Add cached entries to deltas_to_execute
-                last_cached_delta_nonce = None
-                for cached_delta in self.cached_received_exchange_deltas[market_name]:  # Iterates in order received, so increasing nonce number.
-                    if last_cached_delta_nonce is not None:
-                        assert(int(cached_delta['N']) == last_cached_delta_nonce + 1)  # Cached deltas skipped a nonce
-                    if int(cached_delta['N']) > self.market_queryExchangeState_nonce[market_name]:
-                        deltas_to_execute.append(cached_delta)
-                        print("Adding one delta to execute with nonce: {} for {}. Snapshot nonce: {}".format(int(cached_delta['N']), market_name, self.market_queryExchangeState_nonce[market_name]))
+        if market_name in self.cached_received_exchange_deltas:
+            if (market_name in self.market_nonce_numbers):
+                logger.debug(market_name)
+                logger.debug(self.market_nonce_numbers)
+            assert(market_name not in self.market_nonce_numbers)  # Nonce should not be in nonce numbers yet because cached deltas should only be executed on the first received trade after receiving the order book.
+            last_cached_delta_nonce = None
+            checked_if_first_lines_up_with_queryExchange_nonce = False
+            for cached_delta in self.cached_received_exchange_deltas[market_name]:  # Iterates in order received, so increasing nonce number.
+                no_cached_entries = False
+                if last_cached_delta_nonce is not None:
+                    assert (int(cached_delta['N']) == last_cached_delta_nonce + 1)  # Cached deltas skipped a nonce
+                if int(cached_delta['N']) > self.market_queryExchangeState_nonce[market_name]:
+                    if not checked_if_first_lines_up_with_queryExchange_nonce:
+                        checked_if_first_lines_up_with_queryExchange_nonce = True
+                        assert(int(cached_delta['N']) == self.market_queryExchangeState_nonce[market_name] + 1)
 
-        if no_cached_entries and market_name not in self.market_nonce_numbers:
-            # If there were no cached entries but this is the first trade after acquiring book snapshot, then make sure trade lines up with snapshot nonce.
-            logger.debug('No cached entried and first trade after acquiring book snapshot.')
-            assert(self.market_queryExchangeState_nonce[market_name] == int(json['N'])-1)
+                    deltas_to_execute.append(cached_delta)
+                    last_cached_delta_nonce = int(cached_delta['N'])
+                    print("Adding one delta to execute with nonce: {} for {}. Snapshot nonce: {}".format(int(cached_delta['N']), market_name, self.market_queryExchangeState_nonce[market_name]))
+
+            del self.cached_received_exchange_deltas[market_name]
+
+        if market_name in self.market_nonce_numbers:
+            assert(not deltas_to_execute)
+            assert(self.market_nonce_numbers[market_name] == int(json['N']) - 1)  # Make sure that update nonce lines up with last update.
         else:
-            if len(deltas_to_execute) > 0:
+            # First trade after receiving queryExchange
+            if deltas_to_execute:
                 logger.debug('Making sure cached updates line up with received updated')
-                assert(int(deltas_to_execute[-1]['N']) == int(json['N'])-1)  # Make sure that cached updates line up with the received update.
+                assert (int(deltas_to_execute[-1]['N']) == int(json['N']) - 1)  # Make sure that cached updates line up with the received update
             else:
-                # logger.debug(no_cached_entries)
-                # logger.debug(str(deltas_to_execute))
-                # logger.debug('Making sure update nonce lines up with last update')
-                assert(self.market_nonce_numbers[market_name] == int(json['N'])-1)  # Make sure that update nonce lines up with last update.
+                assert(self.market_queryExchangeState_nonce[market_name] == int(json['N']) - 1)
+
+        # deltas_to_execute = []
+        # no_cached_entries = True
+        # if market_name not in self.market_nonce_numbers:
+        #     # The market received first trade after acquiring the book snapshot. Execute cached trades with nonce greater than snapshot nonce.
+        #     if market_name not in self.cached_received_exchange_deltas:
+        #         # No cached entries.
+        #         no_cached_entries = True
+        #     else:
+        #         # Add cached entries to deltas_to_execute
+        #         last_cached_delta_nonce = None
+        #         for cached_delta in self.cached_received_exchange_deltas[market_name]:  # Iterates in order received, so increasing nonce number.
+        #             no_cached_entries = False
+        #             if last_cached_delta_nonce is not None:
+        #                 assert(int(cached_delta['N']) == last_cached_delta_nonce + 1)  # Cached deltas skipped a nonce
+        #             if int(cached_delta['N']) > self.market_queryExchangeState_nonce[market_name]:
+        #                 deltas_to_execute.append(cached_delta)
+        #                 print("Adding one delta to execute with nonce: {} for {}. Snapshot nonce: {}".format(int(cached_delta['N']), market_name, self.market_queryExchangeState_nonce[market_name]))
+
+        # if no_cached_entries and market_name not in self.market_nonce_numbers:
+        #     # If there were no cached entries but this is the first trade after acquiring book snapshot, then make sure trade lines up with snapshot nonce.
+        #     logger.debug('No cached entried and first trade after acquiring book snapshot.')
+        #     assert(self.market_queryExchangeState_nonce[market_name] == int(json['N'])-1)
+        # elif not no_cached_entries and market_name not in self.market_nonce_numbers:
+        #     # If there are cached entries but this is the first trade then proceed with executing cached trades
+        #     assert(len(deltas_to_execute) > 0)
+        #     logger.debug('Making sure cached updates line up with received updated')
+        #     assert (int(deltas_to_execute[-1]['N']) == int(json['N']) - 1)  # Make sure that cached updates line up with the received update.
+        # elif not no_cached_entries and market_name in self.market_nonce_numbers:
+        #     # If there are cached entries but also not the first received trade, should never happen since deltas should be executed on the first trade.
+        #     logger.error(self.market_nonce_numbers)
+        #     logger.error(market_name)
+        #     logger.error(deltas_to_execute)
+        #     assert(False)
+        # elif no_cached_entries and market_name in self.market_nonce_numbers:
+        #     # If there are no cached entries and not the first received trade
+        #     assert (self.market_nonce_numbers[market_name] == int(json['N']) - 1)  # Make sure that update nonce lines up with last update.
+        # else:
+        #     assert(False)
+            # if len(deltas_to_execute) > 0:
+            #     logger.debug('Making sure cached updates line up with received updated')
+            #     assert(int(deltas_to_execute[-1]['N']) == int(json['N'])-1)  # Make sure that cached updates line up with the received update.
+            # else:
+            #     # logger.debug(no_cached_entries)
+            #     # logger.debug(str(deltas_to_execute))
+            #     # logger.debug('Making sure update nonce lines up with last update')
+            #     try:
+            #         assert(self.market_nonce_numbers[market_name] == int(json['N'])-1)  # Make sure that update nonce lines up with last update.
+            #     except KeyError as e:
+            #         logger.error(str(e))
+            #         logger.error(no_cached_entries)
+            #         logger.error(self.market_nonce_numbers)
+            #         logger.error(str(deltas_to_execute))
+            #         logger.error(self.cached_received_exchange_deltas)
+            #         assert(False)
+
+        if len(deltas_to_execute) > 0:
+            logger.debug('Making sure cached updates line up with received updated')
+            assert (int(deltas_to_execute[-1]['N']) == int(json['N']) - 1)  # Make sure that cached updates line up with the received update.
 
 
         # IF deltas_to_execute then execute them.
         if len(deltas_to_execute) > 0:
-            logger.debug('Have deltas_to_execute for {}'.format(market_name))
+            logger.debug('Having deltas_to_execute for {}.'.format(market_name))
 
         self.market_nonce_numbers[market_name] = int(json['N'])
+        logger.debug('Set market nonce for {}'.format(market_name))
 
         for queryExchangeState in deltas_to_execute + [json]:
-            # Fills need to come first because if an order is fulfilled fully then it will be removed in the same update.
+            # Adds come before everything.
+            # Then fills need to come first because if an order is fulfilled fully then it will be removed in the same update.
+            # Then removes and updates
+            for buy_order in queryExchangeState['Z']:
+                if int(buy_order['TY']) == 0: # Add
+                    self.order_books[market_name].add_order(True, Decimal(buy_order['R']), Decimal(buy_order['Q']))
 
-            #
-            # Note: Might need to execute adds before trades for the same proiblem.
-            #
+            for sell_order in queryExchangeState['S']:
+                if int(sell_order['TY']) == 0: # Add
+                    self.order_books[market_name].add_order(False, Decimal(sell_order['R']), Decimal(sell_order['Q']))
+
             for fill in queryExchangeState['f']:  # In fills
                 buy = None
                 if fill['OT'] == 'SELL':
@@ -207,22 +328,20 @@ class BittrexWebsockets(ContinuousDataAPI):
                 self.write_trade(trade)
 
             for buy_order in queryExchangeState['Z']:
-                if int(buy_order['TY']) == 0: # Add
-                    self.order_books[market_name].add_order(True, Decimal(buy_order['R']), Decimal(buy_order['Q']))
                 if int(buy_order['TY']) == 1: # Remove
                     self.order_books[market_name].remove_order(True, Decimal(buy_order['R']))
                 if int(buy_order['TY']) == 2: # Update
                     self.order_books[market_name].set_order(True, Decimal(buy_order['R']), Decimal(buy_order['Q']))
 
             for sell_order in queryExchangeState['S']:
-                if int(sell_order['TY']) == 0: # Add
-                    self.order_books[market_name].add_order(False, Decimal(sell_order['R']), Decimal(sell_order['Q']))
                 if int(sell_order['TY']) == 1: # Remove
                     self.order_books[market_name].remove_order(False, Decimal(sell_order['R']))
                 if int(sell_order['TY']) == 2: # Update
                     self.order_books[market_name].set_order(False, Decimal(sell_order['R']), Decimal(sell_order['Q']))
 
         self.order_books[market_name].save_order_book()
+        self.mutexes[market_name].release()
+        logger.debug('Lock released for market {}'.format(market_name))
 
 
     def run(self):

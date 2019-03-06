@@ -20,7 +20,7 @@ def startup_queue():
     zmq_collector_starter_command_channel.bind("tcp://0.0.0.0:5556")
 
     ######################################################### TEMPORARY
-    zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': 'POLONIEX'})
+    zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': 'BITTREX'})
     # for exchange_name, _ in continuous_data_apis.items():
     #     zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': exchange_name})
 
