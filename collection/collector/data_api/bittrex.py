@@ -291,7 +291,6 @@ class BittrexWebsockets(ContinuousDataAPI):
             logger.debug('Having deltas_to_execute for {}.'.format(market_name))
 
         self.market_nonce_numbers[market_name] = int(json['N'])
-        logger.debug('Set market nonce for {}'.format(market_name))
 
         for queryExchangeState in deltas_to_execute + [json]:
             # Adds come before everything.
@@ -324,8 +323,8 @@ class BittrexWebsockets(ContinuousDataAPI):
                                   float(fill['Q']),
                                   float(fill['R']),
                                   timestamp=timestamp)
-                self.order_books[market_name].update_using_trade(buy, Decimal(fill['R']), Decimal(fill['Q']))
-                self.write_trade(trade)
+                # self.order_books[market_name].update_using_trade(buy, Decimal(fill['R']), Decimal(fill['Q']))
+                # self.write_trade(trade)
 
             for buy_order in queryExchangeState['Z']:
                 if int(buy_order['TY']) == 1: # Remove

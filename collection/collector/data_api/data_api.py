@@ -87,8 +87,8 @@ class OrderBook:
     def set_initial_orders(self, sell_orders, buy_orders):
         # assert(len(sell_orders) > 0)
         # assert(len(buy_orders) > 0)
-        logger.debug(sell_orders)
-        logger.debug(buy_orders)
+        logger.debug("{}: {}".format(self.pair.pair, sell_orders))
+        logger.debug("{}: {}".format(self.pair.pair, buy_orders))
         self.sell_orders = sell_orders
         self.buy_orders = buy_orders
         self.initial_orders_set = True
@@ -142,11 +142,18 @@ class OrderBook:
     def update_using_trade(self, buy: bool, price: Decimal, size: Decimal):
         assert(self.initial_orders_set)
 
-        logger.debug('Updating using trade: ' + self.pair.pair + str(buy))
+        logger.debug('Updating using trade: ' + self.pair.pair + str(buy) + " {}: {}".format(price, size))
         if buy:  # If bought then sell order (or a part of it) is fulfilled and vice versa.
             # print(self.sell_orders)
             try:
                 self.sell_orders[price] -= size
+                if self.sell_orders[price] < 0:
+                    logger.error(self.buy_orders)
+                    logger.error(self.sell_orders)
+                    logger.error(price)
+                    logger.error(list(self.sell_orders.keys())[0])
+                    logger.error(price == list(self.sell_orders.keys())[0])
+                    logger.error(price in self.buy_orders)
                 assert(self.sell_orders[price] >= 0)
             except KeyError:
                 logger.error(self.buy_orders)
@@ -160,6 +167,13 @@ class OrderBook:
             try:
                 # print(self.buy_orders)
                 self.buy_orders[price] -= size
+                if self.buy_orders[price] < 0:
+                    logger.error(self.buy_orders)
+                    logger.error(self.sell_orders)
+                    logger.error(price)
+                    logger.error(list(self.sell_orders.keys())[0])
+                    logger.error(price == list(self.sell_orders.keys())[0])
+                    logger.error(price in self.buy_orders)
                 assert(self.buy_orders[price] >= 0)
             except KeyError:
                 logger.error(self.sell_orders)
