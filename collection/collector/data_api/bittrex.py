@@ -201,7 +201,6 @@ class BittrexWebsockets(ContinuousDataAPI):
             last_cached_delta_nonce = None
             checked_if_first_lines_up_with_queryExchange_nonce = False
             for cached_delta in self.cached_received_exchange_deltas[market_name]:  # Iterates in order received, so increasing nonce number.
-                no_cached_entries = False
                 if last_cached_delta_nonce is not None:
                     assert (int(cached_delta['N']) == last_cached_delta_nonce + 1)  # Cached deltas skipped a nonce
                 if int(cached_delta['N']) > self.market_queryExchangeState_nonce[market_name]:
@@ -225,61 +224,6 @@ class BittrexWebsockets(ContinuousDataAPI):
                 assert (int(deltas_to_execute[-1]['N']) == int(json['N']) - 1)  # Make sure that cached updates line up with the received update
             else:
                 assert(self.market_queryExchangeState_nonce[market_name] == int(json['N']) - 1)
-
-        # deltas_to_execute = []
-        # no_cached_entries = True
-        # if market_name not in self.market_nonce_numbers:
-        #     # The market received first trade after acquiring the book snapshot. Execute cached trades with nonce greater than snapshot nonce.
-        #     if market_name not in self.cached_received_exchange_deltas:
-        #         # No cached entries.
-        #         no_cached_entries = True
-        #     else:
-        #         # Add cached entries to deltas_to_execute
-        #         last_cached_delta_nonce = None
-        #         for cached_delta in self.cached_received_exchange_deltas[market_name]:  # Iterates in order received, so increasing nonce number.
-        #             no_cached_entries = False
-        #             if last_cached_delta_nonce is not None:
-        #                 assert(int(cached_delta['N']) == last_cached_delta_nonce + 1)  # Cached deltas skipped a nonce
-        #             if int(cached_delta['N']) > self.market_queryExchangeState_nonce[market_name]:
-        #                 deltas_to_execute.append(cached_delta)
-        #                 print("Adding one delta to execute with nonce: {} for {}. Snapshot nonce: {}".format(int(cached_delta['N']), market_name, self.market_queryExchangeState_nonce[market_name]))
-
-        # if no_cached_entries and market_name not in self.market_nonce_numbers:
-        #     # If there were no cached entries but this is the first trade after acquiring book snapshot, then make sure trade lines up with snapshot nonce.
-        #     logger.debug('No cached entried and first trade after acquiring book snapshot.')
-        #     assert(self.market_queryExchangeState_nonce[market_name] == int(json['N'])-1)
-        # elif not no_cached_entries and market_name not in self.market_nonce_numbers:
-        #     # If there are cached entries but this is the first trade then proceed with executing cached trades
-        #     assert(len(deltas_to_execute) > 0)
-        #     logger.debug('Making sure cached updates line up with received updated')
-        #     assert (int(deltas_to_execute[-1]['N']) == int(json['N']) - 1)  # Make sure that cached updates line up with the received update.
-        # elif not no_cached_entries and market_name in self.market_nonce_numbers:
-        #     # If there are cached entries but also not the first received trade, should never happen since deltas should be executed on the first trade.
-        #     logger.error(self.market_nonce_numbers)
-        #     logger.error(market_name)
-        #     logger.error(deltas_to_execute)
-        #     assert(False)
-        # elif no_cached_entries and market_name in self.market_nonce_numbers:
-        #     # If there are no cached entries and not the first received trade
-        #     assert (self.market_nonce_numbers[market_name] == int(json['N']) - 1)  # Make sure that update nonce lines up with last update.
-        # else:
-        #     assert(False)
-            # if len(deltas_to_execute) > 0:
-            #     logger.debug('Making sure cached updates line up with received updated')
-            #     assert(int(deltas_to_execute[-1]['N']) == int(json['N'])-1)  # Make sure that cached updates line up with the received update.
-            # else:
-            #     # logger.debug(no_cached_entries)
-            #     # logger.debug(str(deltas_to_execute))
-            #     # logger.debug('Making sure update nonce lines up with last update')
-            #     try:
-            #         assert(self.market_nonce_numbers[market_name] == int(json['N'])-1)  # Make sure that update nonce lines up with last update.
-            #     except KeyError as e:
-            #         logger.error(str(e))
-            #         logger.error(no_cached_entries)
-            #         logger.error(self.market_nonce_numbers)
-            #         logger.error(str(deltas_to_execute))
-            #         logger.error(self.cached_received_exchange_deltas)
-            #         assert(False)
 
         if len(deltas_to_execute) > 0:
             logger.debug('Making sure cached updates line up with received updated')
@@ -323,8 +267,8 @@ class BittrexWebsockets(ContinuousDataAPI):
                                   float(fill['Q']),
                                   float(fill['R']),
                                   timestamp=timestamp)
-                # self.order_books[market_name].update_using_trade(buy, Decimal(fill['R']), Decimal(fill['Q']))
-                # self.write_trade(trade)
+                self.order_books[market_name].update_using_trade(buy, Decimal(fill['R']), Decimal(fill['Q']))
+                self.write_trade(trade)
 
             for buy_order in queryExchangeState['Z']:
                 if int(buy_order['TY']) == 1: # Remove

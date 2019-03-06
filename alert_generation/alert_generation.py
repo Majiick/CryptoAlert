@@ -4,12 +4,47 @@ from price_point import PricePoint
 from volume_point import VolumePoint
 from price_percentage import PricePercentage
 from alert import Alert
-from typing import List, Type, Dict
+from typing import List, Type, Dict, Any
 from mlogging import logger
 from email_notification import EmailNotification
+from postgresql_init import engine
+from sqlalchemy.sql import text
+import time
+
+
+def calculate_volume(pair: str, exchange: str):
+    """
+    Returns a [5 second, 10 second, 30 second, 1 minute, 10 minute and 30 minute volume]
+    """
+    ret = []
+
+    time_started_selects = time.time()
+    with engine.begin() as conn:
+        for time_frame in [5, 10, 30, 1*60, 10*60, 30*60]:
+            result = conn.execute(text(
+                "SELECT sum(size) FROM TRADE WHERE trade_time > (extract(epoch from now()) * 1000000000) - cast(1 as bigint)*:time_frame*1000000000 AND market=:market AND exchange=:exchange;"),
+                                  time_frame=int(time_frame),
+                                  market=pair,
+                                  exchange=exchange)
+            result = result.fetchone()
+            if result[0] is None:
+                logger.warning('No result for volume query for {}'.format(pair, exchange))
+                ret.append(0)
+            else:
+                ret.append(result[0])
+
+    logger.debug("Time to select: {}".format(time.time() - time_started_selects))
+    logger.debug("{} {} {}".format(exchange, pair, ret))
+    return ret
+
+
+# https://www.calculatorsoup.com/calculators/algebra/percent-difference-calculator.php
+def percentage_difference(v1, v2):
+    return abs(v1 - v2) / ((v1 + v2)/2.0) * 100
 
 logger.info("Started alert generation")
-last_trade_price : Dict[str, Dict[str, float]] = {}  # Dict[Exchange, Dict[Pair, Last Trade Price]]
+last_trade_price: Dict[str, Dict[str, float]] = {}  # Dict[Exchange, Dict[Pair, Last Trade Price]]
+placed_orders: Any = []  # List[(time_placed, pair, exchange, price, other_exchange_price), ...]
 
 context = zmq.Context()
 workers_socket = context.socket(zmq.SUB)  # Subs to collector_publisher PUB socket.
@@ -39,13 +74,41 @@ while True:
 
         last_trade_price[json[0]['tags']['exchange']][json[0]['tags']['pair']] = json[0]['fields']['price']
 
+        for placed_order in placed_orders:
+            if time.time() - 60 > placed_order[0]:
+                logger.info('Executing placed order {}. Last trade price on exchange is {}. Profit: {}'.format(placed_order, last_trade_price[placed_order[2]][placed_order[1]], last_trade_price[placed_order[2]][placed_order[1]] - placed_order[3]))
+        placed_orders = [x for x in placed_orders if not time.time() - 60 > x[0]]
+
         for exchange, pairs in last_trade_price.items():
             for pair in pairs:
                 for other_exchange, _ in last_trade_price.items():
                     if other_exchange != exchange:
                         if pair in last_trade_price[other_exchange]:
-                            print('Price difference for {}: {}'.format(pair, abs(last_trade_price[exchange][pair] - last_trade_price[other_exchange][pair])))
-                            print('Price for {} at {} is {}. While at {} it is {}.'.format(pair, exchange, last_trade_price[exchange][pair], other_exchange, last_trade_price[other_exchange][pair]))
+                            # https://www.calculatorsoup.com/calculators/algebra/percent-difference-calculator.php
+                            price_difference = abs(last_trade_price[exchange][pair] - last_trade_price[other_exchange][pair]) / ((last_trade_price[exchange][pair] + last_trade_price[other_exchange][pair])/2.0) * 100
+
+                            if price_difference > 0.1:
+                                exchange_volumes = calculate_volume(pair, exchange)
+                                other_exchange_volumes = calculate_volume(pair, other_exchange)
+
+                                logger.debug(exchange_volumes[5])
+                                logger.debug(other_exchange_volumes[5])
+                                logger.debug('Volume percentage difference for {} is {}'.format(pair, percentage_difference(exchange_volumes[5], other_exchange_volumes[5])))
+                                if exchange_volumes[5] > other_exchange_volumes[5]:
+                                    diff = last_trade_price[exchange][pair] - last_trade_price[other_exchange][pair]
+                                    logger.debug('Volume higher at {}'.format(exchange))
+                                    if diff > 0:
+                                        placed_orders.append((time.time(), pair, other_exchange, last_trade_price[other_exchange][pair], last_trade_price[exchange][pair]))
+                                        logger.debug('placed order {}'.format(placed_orders[-1]))
+                                else:
+                                    diff = last_trade_price[other_exchange][pair] - last_trade_price[exchange][pair]
+                                    logger.debug('Volume higher at {}'.format(other_exchange))
+                                    if diff > 0:
+                                        placed_orders.append((time.time(), pair, exchange, last_trade_price[exchange][pair], last_trade_price[other_exchange][pair]))
+                                        logger.debug('placed order {}'.format(placed_orders[-1]))
+                                logger.info('Price difference percentage for {}: {}'.format(pair, price_difference))
+                                logger.info('Price difference for {}: {}'.format(pair, abs(last_trade_price[exchange][pair] - last_trade_price[other_exchange][pair])))
+                                logger.info('Price for {} at {} is {}. While at {} it is {}.'.format(pair, exchange, last_trade_price[exchange][pair], other_exchange, last_trade_price[other_exchange][pair]))
 
 
         for alert in alerts:

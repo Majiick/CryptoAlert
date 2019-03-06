@@ -141,6 +141,9 @@ class OrderBook:
 
     def update_using_trade(self, buy: bool, price: Decimal, size: Decimal):
         assert(self.initial_orders_set)
+        if self.exchange.name == 'BITTREX':
+            logger.debug('Skipping update using trade because {} exchange.'.format(self.exchange.name))
+            return
 
         logger.debug('Updating using trade: ' + self.pair.pair + str(buy) + " {}: {}".format(price, size))
         if buy:  # If bought then sell order (or a part of it) is fulfilled and vice versa.
