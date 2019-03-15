@@ -87,8 +87,8 @@ class OrderBook:
     def set_initial_orders(self, sell_orders, buy_orders):
         # assert(len(sell_orders) > 0)
         # assert(len(buy_orders) > 0)
-        logger.debug("{}: {}".format(self.pair.pair, sell_orders))
-        logger.debug("{}: {}".format(self.pair.pair, buy_orders))
+        logger.debug("{} {}: {}".format(self.pair.pair, self.exchange.name, sell_orders))
+        logger.debug("{} {}: {}".format(self.pair.pair, self.exchange.name, buy_orders))
         self.sell_orders = sell_orders
         self.buy_orders = buy_orders
         self.initial_orders_set = True
@@ -141,7 +141,7 @@ class OrderBook:
 
     def update_using_trade(self, buy: bool, price: Decimal, size: Decimal):
         assert(self.initial_orders_set)
-        if self.exchange.name == 'BITTREX':
+        if self.exchange.name == 'BITTREX' or self.exchange.name == 'POLONIEX':
             logger.debug('Skipping update using trade because {} exchange.'.format(self.exchange.name))
             return
 

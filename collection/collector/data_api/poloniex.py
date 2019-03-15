@@ -222,7 +222,7 @@ class PoloniexWebsocket(ContinuousDataAPI):
                                   buy,
                                   float(update[4]),
                                   float(update[3]))
-
+                logger.debug(trade.get_as_json_dict())
                 self.order_books[pair_name].update_using_trade(buy, Decimal(update[3]), Decimal(update[4]))
                 self.write_trade(trade)
             elif update[0] == 'o':  # Order Book modification

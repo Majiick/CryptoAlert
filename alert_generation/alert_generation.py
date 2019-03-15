@@ -88,27 +88,34 @@ while True:
                             price_difference = abs(last_trade_price[exchange][pair] - last_trade_price[other_exchange][pair]) / ((last_trade_price[exchange][pair] + last_trade_price[other_exchange][pair])/2.0) * 100
 
                             if price_difference > 0.1:
-                                exchange_volumes = calculate_volume(pair, exchange)
-                                other_exchange_volumes = calculate_volume(pair, other_exchange)
+                                skip = False
+                                for plcord in placed_orders:
+                                    if plcord[1] == pair:
+                                        skip = True
+                                if not skip:
+                                    exchange_volumes = calculate_volume(pair, exchange)
+                                    other_exchange_volumes = calculate_volume(pair, other_exchange)
 
-                                logger.debug(exchange_volumes[5])
-                                logger.debug(other_exchange_volumes[5])
-                                logger.debug('Volume percentage difference for {} is {}'.format(pair, percentage_difference(exchange_volumes[5], other_exchange_volumes[5])))
-                                if exchange_volumes[5] > other_exchange_volumes[5]:
-                                    diff = last_trade_price[exchange][pair] - last_trade_price[other_exchange][pair]
-                                    logger.debug('Volume higher at {}'.format(exchange))
-                                    if diff > 0:
-                                        placed_orders.append((time.time(), pair, other_exchange, last_trade_price[other_exchange][pair], last_trade_price[exchange][pair]))
-                                        logger.debug('placed order {}'.format(placed_orders[-1]))
-                                else:
-                                    diff = last_trade_price[other_exchange][pair] - last_trade_price[exchange][pair]
-                                    logger.debug('Volume higher at {}'.format(other_exchange))
-                                    if diff > 0:
-                                        placed_orders.append((time.time(), pair, exchange, last_trade_price[exchange][pair], last_trade_price[other_exchange][pair]))
-                                        logger.debug('placed order {}'.format(placed_orders[-1]))
-                                logger.info('Price difference percentage for {}: {}'.format(pair, price_difference))
-                                logger.info('Price difference for {}: {}'.format(pair, abs(last_trade_price[exchange][pair] - last_trade_price[other_exchange][pair])))
-                                logger.info('Price for {} at {} is {}. While at {} it is {}.'.format(pair, exchange, last_trade_price[exchange][pair], other_exchange, last_trade_price[other_exchange][pair]))
+                                    logger.debug(exchange_volumes[5])
+                                    logger.debug(other_exchange_volumes[5])
+                                    logger.debug('Volume percentage difference for {} is {}'.format(pair, percentage_difference(exchange_volumes[5], other_exchange_volumes[5])))
+                                    if exchange_volumes[5] > other_exchange_volumes[5]:
+                                        diff = last_trade_price[exchange][pair] - last_trade_price[other_exchange][pair]
+                                        logger.debug('Volume higher at {}'.format(exchange))
+                                        if diff > 0:
+                                            placed_orders.append((time.time(), pair, other_exchange, last_trade_price[other_exchange][pair], last_trade_price[exchange][pair]))
+                                            logger.debug('placed order {}'.format(placed_orders[-1]))
+                                    else:
+                                        diff = last_trade_price[other_exchange][pair] - last_trade_price[exchange][pair]
+                                        logger.debug('Volume higher at {}'.format(other_exchange))
+                                        if diff > 0:
+                                            placed_orders.append((time.time(), pair, exchange, last_trade_price[exchange][pair], last_trade_price[other_exchange][pair]))
+                                            logger.debug('placed order {}'.format(placed_orders[-1]))
+                                    logger.info('Price difference percentage for {}: {}'.format(pair, price_difference))
+                                    logger.info('Price difference for {}: {}'.format(pair, abs(last_trade_price[exchange][pair] - last_trade_price[other_exchange][pair])))
+                                    logger.info('Price for {} at {} is {}. While at {} it is {}.'.format(pair, exchange, last_trade_price[exchange][pair], other_exchange, last_trade_price[other_exchange][pair]))
+                            else:
+                                logger.debug('{} {}'.format(pair, price_difference))
 
 
         for alert in alerts:
