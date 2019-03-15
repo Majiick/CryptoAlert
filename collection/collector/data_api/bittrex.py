@@ -179,8 +179,8 @@ class BittrexWebsockets(ContinuousDataAPI):
         if market_name not in self.mutexes:
             self.mutexes[market_name] = QLock()
         self.mutexes[market_name].acquire()
-        logger.debug('Lock acquired for market {}'.format(market_name))
-        logger.debug(json)
+        # logger.debug('Lock acquired for market {}'.format(market_name))
+        # logger.debug(json)
 
         if market_name not in self.market_queryExchangeState_nonce:
             logger.debug('Nonce for market {} not set yet. This means the order book snapshot not yet received. Caching this update {}.'.format(market_name, json))
@@ -284,7 +284,7 @@ class BittrexWebsockets(ContinuousDataAPI):
 
         self.order_books[market_name].save_order_book()
         self.mutexes[market_name].release()
-        logger.debug('Lock released for market {}'.format(market_name))
+        # logger.debug('Lock released for market {}'.format(market_name))
 
 
     def run(self):

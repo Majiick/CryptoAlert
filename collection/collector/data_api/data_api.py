@@ -87,8 +87,8 @@ class OrderBook:
     def set_initial_orders(self, sell_orders, buy_orders):
         # assert(len(sell_orders) > 0)
         # assert(len(buy_orders) > 0)
-        logger.debug("{} {}: {}".format(self.pair.pair, self.exchange.name, sell_orders))
-        logger.debug("{} {}: {}".format(self.pair.pair, self.exchange.name, buy_orders))
+        # logger.debug("{} {}: {}".format(self.pair.pair, self.exchange.name, sell_orders))
+        # logger.debug("{} {}: {}".format(self.pair.pair, self.exchange.name, buy_orders))
         self.sell_orders = sell_orders
         self.buy_orders = buy_orders
         self.initial_orders_set = True
@@ -98,7 +98,7 @@ class OrderBook:
         assert(price > 0)
         assert(new_size > 0)
 
-        logger.debug(self.pair.pair + " Setting order at price " + str(price))
+        # logger.debug(self.pair.pair + " Setting order at price " + str(price))
         if buy:
             assert(price in self.buy_orders)
             self.buy_orders[price] = new_size
@@ -115,18 +115,18 @@ class OrderBook:
             if price not in self.buy_orders:
                 self.buy_orders[price] = Decimal(0)
             self.buy_orders[price] += size
-            logger.debug(self.pair.pair + " Adding buy order at price " + str(price))
+            # logger.debug(self.pair.pair + " Adding buy order at price " + str(price))
         else:
             if price not in self.sell_orders:
                 self.sell_orders[price] = Decimal(0)
             self.sell_orders[price] += size
-            logger.debug(self.pair.pair + "Adding sell order at price " + str(price))
+            # logger.debug(self.pair.pair + "Adding sell order at price " + str(price))
 
     def remove_order(self, buy: bool, price: Decimal):
         """
         Removes order at price. Removes fully.
         """
-        logger.debug(self.pair.pair + " Removing order at price " + str(price) + " buy:{}".format(buy))
+        # logger.debug(self.pair.pair + " Removing order at price " + str(price) + " buy:{}".format(buy))
         assert(self.initial_orders_set)
         if buy:
             if price in self.buy_orders:
@@ -142,7 +142,7 @@ class OrderBook:
     def update_using_trade(self, buy: bool, price: Decimal, size: Decimal):
         assert(self.initial_orders_set)
         if self.exchange.name == 'BITTREX' or self.exchange.name == 'POLONIEX':
-            logger.debug('Skipping update using trade because {} exchange.'.format(self.exchange.name))
+            # logger.debug('Skipping update using trade because {} exchange.'.format(self.exchange.name))
             return
 
         logger.debug('Updating using trade: ' + self.pair.pair + str(buy) + " {}: {}".format(price, size))
@@ -343,7 +343,8 @@ class ContinuousDataAPI(ABC):
         if time_to_write > 0.01:
             logger.warning('It took {} to push trade to collector publisher and write to postgres'.format(time_to_write))
         else:
-            logger.debug('It took {} to push trade to collector publisher and write to postgres'.format(time_to_write))
+            pass
+            # logger.debug('It took {} to push trade to collector publisher and write to postgres'.format(time_to_write))
 
     @staticmethod
     @abstractmethod

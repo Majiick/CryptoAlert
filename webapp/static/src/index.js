@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import 'semantic-ui-css/semantic.min.css';
-import { Button, Icon, Label, Menu, List, Header, Container, Divider, Input, Segment, TransitionablePortal, Dropdown } from 'semantic-ui-react'
+import { Button, Icon, Label, Menu, List, Header, Container, Divider, Input, Segment, TransitionablePortal, Dropdown, Grid } from 'semantic-ui-react'
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { createStore } from 'redux'
@@ -155,6 +155,31 @@ class TopMenu extends React.Component {
 }
 
 
+class TopLatestPrices extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {prices: {}}
+    }
+
+    render() {
+        console.log('price_updates ' + this.props.price_updates.toString());
+        this.props.price_updates.forEach((update) => {
+           this.state.prices[update['data']['pair']] = update['data']['price'];
+        });
+
+        let myMenu = []
+        for (var key in this.state.prices) {
+            myMenu.push(<Menu.Item>{key} + ': ' + {this.state.prices[key]}</Menu.Item>)
+        }
+
+        return (
+          <Menu Inverted> {myMenu} </Menu>
+        );
+    }
+}
+
+
 class CreateAlertPricePoint extends React.Component {
     constructor(props) {
         super(props);
@@ -303,15 +328,22 @@ class Alerts extends React.Component {
 class App extends React.Component {
     constructor(props) {
         super(props);
-        //this.state.updated_myalerts is to prevent infinite loop of changing redux state.
-        this.state = {number_alerts: 0, alert_notification: [], subscribed_alerts: [], logged_in: false, updated_myalerts: true}
+        console.log("wtf")
+        // this.state.updated_myalerts is to prevent infinite loop of changing redux state.
+        this.state = {number_alerts: 0, alert_notification: [], subscribed_alerts: [], logged_in: false, updated_myalerts: true, price_updates: []}
         this.state.alert_notification.push(<List.Item>Test Alert Notification</List.Item>);
         this.state.subscribed_alerts.push(<List.Item>Test My Alert</List.Item>);
 
-        const socket = io('http://209.97.181.63:443/');
+        console.log("Hello");
 
-        socket.on('price_update', function (data) {
+        const socket = io('http://46.101.82.15:443/');
+
+        socket.on('price_update', (data) => {
+            console.log("Price update")
             console.log(data);
+            this.state.price_updates.push(data);
+            console.log(this.state.price_updates);
+            this.setState({});
             //socket.emit('my other event', { my: 'data' });
         });
 
@@ -387,14 +419,17 @@ class App extends React.Component {
             return (
                 <React.Fragment>
                     <TopMenu number_alerts={ this.state.number_alerts} />
-            {reduxState.topMenuSelection == 'alerts' ? (
-                        <Alerts subscribed_alerts={state_.subscribed_alerts} alert_notification={state_.alert_notification}/>
-                ) : null
-            }
+                    <TopLatestPrices price_updates={state_.price_updates}/>
+                    {reduxState.topMenuSelection == 'alerts' ? (
+                                <Alerts subscribed_alerts={state_.subscribed_alerts} alert_notification={state_.alert_notification}/>
+                        ) : null
+                    }
                 </React.Fragment>
             );
     }
 }
+
+console.log("Hello");
 
 ReactDOM.render(<App/>, document.getElementById('root'));
 //const element = <h1>Hello, world</h1>;

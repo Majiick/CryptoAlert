@@ -20,5 +20,5 @@ def run():
 
     while True:
         msg = pull.recv()
-        logger.debug('Collector publisher received msg ' + str(msg))
+        # logger.debug('Collector publisher received msg ' + str(msg))
         pub.send(msg)
