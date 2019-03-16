@@ -86,7 +86,7 @@ def listen_to_alert_pub():
 
     while True:
         # TODO: Sleep 0 here might be causing big delays
-        eventlet.sleep(0.1)
+        eventlet.sleep(0.0)
 
         try:
             json = sub_socket.recv_json(flags=zmq.NOBLOCK)
