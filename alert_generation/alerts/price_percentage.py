@@ -4,7 +4,7 @@ import psycopg2
 import time
 from postgresql_init import engine
 from sqlalchemy.sql import text
-from typing import List, Type, Dict
+from typing import List, Type, Dict, Any
 from mlogging import logger
 import time
 
@@ -28,20 +28,13 @@ class PricePercentage(Alert):
         self.direction = direction
         self.time_frame = time_frame
 
+        # The 3 variables below are to be used when constructing the get interesting event description.
+        self.price_percentage_diff = 0.0
+        self.min_price = 0.0
+        self.max_price = 0.0
+
     def trigger(self, trade) -> bool:
         time_started_query = time.time()
-        """
-        NEED TO TAKE INTO ACCOUNT BUY AND SELL?
-
-
-
-
-
-
-
-
-
-        """
         if (trade['tags']['pair'].lower() == self.pair.lower() or self.pair == '*') and (trade['tags']['exchange'].lower() == self.exchange.lower() or self.exchange == '*'):
             # Result: ResultSet({'('trade', None)': [{'time': '2019-02-28T10:58:08.306845796Z', 'max': 1.67000003, 'min': 1.67000003}]})
             # After list(result): [[{'time': '2019-02-28T11:01:11.533978751Z', 'max': 0.00042362, 'min': 0.00042362}]]
@@ -72,22 +65,27 @@ class PricePercentage(Alert):
             ret = False
             if self.direction == 'up':
                 percentage_diff = 100.0 * (trade['fields']['price'] - min_price) / min_price
-                logger.debug(trade['fields']['price'])
-                logger.debug(min_price)
-                logger.debug(percentage_diff)
-                logger.debug(trade)
-                logger.debug('up')
+                # logger.debug(trade['fields']['price'])
+                # logger.debug(min_price)
+                # logger.debug(percentage_diff)
+                # logger.debug(trade)
+                # logger.debug('up')
                 if percentage_diff > self.point:
                     ret = True
             elif self.direction == 'down':
                 percentage_diff = 100.0 * (trade['fields']['price'] - max_price) / max_price
-                logger.debug(trade['fields']['price'])
-                logger.debug(max_price)
-                logger.debug(percentage_diff)
-                logger.debug(trade)
-                logger.debug('down')
+                # logger.debug(trade['fields']['price'])
+                # logger.debug(max_price)
+                # logger.debug(percentage_diff)
+                # logger.debug(trade)
+                # logger.debug('down')
                 if abs(percentage_diff) > self.point:
                     ret = True
+
+            if ret:
+                self.min_price = min_price
+                self.max_price = max_price
+                self.price_percentage_diff = percentage_diff
 
 
         time_to_query = time.time() - time_started_query
@@ -96,6 +94,23 @@ class PricePercentage(Alert):
             for x in range(20):
                 logger.debug('truyu')
         return ret
+
+    def get_interesting_event_description(self):
+        '''
+        CREATE TABLE IF NOT EXISTS INTERESTING_EVENT(
+        id SERIAL PRIMARY KEY,
+        event_time BIGINT NOT NULL,
+        exchange TEXT NOT NULL,
+        market TEXT NOT NULL,
+        message TEXT NOT NULL,
+        event_type TEXT NOT NULL
+        );
+        '''
+        assert(self.min_price is not None)
+        assert(self.max_price is not None)
+        assert(self.price_percentage_diff is not None)
+        return {'event_time': -1, 'exchange': self.exchange, 'market': self.pair, 'event_type': 'pricepercentage',
+                'message': 'Price spiked by {} from {} to {} in the last {} seconds.'.format(self.price_percentage_diff, self.min_price, self.max_price, self.time_frame)}
 
     @staticmethod
     def get_all_from_db() -> List[Alert]:
@@ -109,6 +124,7 @@ class PricePercentage(Alert):
                 alert.created_by_user = row['created_by_user']
                 alert.fulfilled = row['fulfilled']
                 alert.repeat = row['repeat']
+                alert.broadcast_interesting_event_on_trigger = row['broadcast_interesting_event_on_trigger']
                 ret.append(alert)
 
         return ret

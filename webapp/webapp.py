@@ -170,7 +170,7 @@ def create_alert():
 
     print(request.json, flush=True)
     with engine.begin() as conn:
-        s = text("insert into PRICE_POINT_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction) values (DEFAULT, :user_pk, FALSE, FALSE, :exchange, :pair, :point, :direction) RETURNING alert_pk")
+        s = text('insert into PRICE_POINT_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, alert_type) values (DEFAULT, :user_pk, FALSE, FALSE, :exchange, :pair, :point, :direction, "pricepoint") RETURNING alert_pk')
         cursor = conn.execute(s, user_pk=current_identity.get_id(), exchange=request.json['exchange'][0], pair=request.json['pair'][0], point=float(request.json['point']), direction=dir)
         created_alert_pk = cursor.fetchone()[0]
 

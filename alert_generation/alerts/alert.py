@@ -12,10 +12,17 @@ class Alert(ABC):
         self.created_by_user = None
         self.fulfilled = None
         self.repeat = None
+        self.broadcast_interesting_event_on_trigger = None
 
     @abstractmethod
     def trigger(self, trade) -> bool:
         """ Call this to find out if the alert triggers or not on the passed in trade.
+        """
+        pass
+
+    @abstractmethod
+    def get_interesting_event_description(self):
+        """ Call this to get the interesting event dictionary. Should contain all the fields as in the INTERESTING_EVENT table in the SQL schema.
         """
         pass
 

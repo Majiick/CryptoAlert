@@ -1,13 +1,17 @@
 import _ from 'lodash';
 import 'semantic-ui-css/semantic.min.css';
-import { Button, Icon, Label, Menu, List, Header, Container, Divider, Input, Segment, TransitionablePortal, Dropdown, Grid } from 'semantic-ui-react'
+import { Button, Icon, Label, Menu, List, Header, Container, Divider, Input, Segment, TransitionablePortal, Dropdown, Grid, Checkbox } from 'semantic-ui-react'
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { createStore } from 'redux'
+import { createStore } from 'redux';
+import ReactTable from "react-table";
+import 'react-table/react-table.css'
 
 const reduxState = {
     jwt_token: '',
-    updateMyAlerts: false
+    updateMyAlerts: false,
+    user_email: '',
+    email_notification_value: false
 }
 
 function reduxReducer(state, action) {
@@ -23,11 +27,18 @@ function reduxReducer(state, action) {
       case "TOPMENUSELECTION":
           state['topMenuSelection'] = action.selection;
 	      console.log('top menu selection dispatched selection: ' + action.selection);
-	  return state;
+          return state;
       case "UPDATEMYALERTS":
           state['updateMyAlerts'] = action.update;
           console.log('Update my alerts updated to: ' + action.update);
 	      return state;
+      case "SETUSEREMAIL":
+          state['user_email'] = action.email;
+          return state;
+      case "SETEMAILNOTIFICATIONVALUE":
+          console.log('Set action.email_notification_value to ' + action.email_notification_value)
+          state['email_notification_value'] = action.email_notification_value;
+          return state;
       default:
           console.warn('Default redux action, state not changed, action.');
           console.warn(action);
@@ -136,6 +147,10 @@ class TopMenu extends React.Component {
 	    this.setState({ activeItem: name });
 	    reduxStore.dispatch({type: 'TOPMENUSELECTION', selection: name});
     }
+    constructor(props) {
+        super(props);
+        reduxStore.dispatch({type: 'TOPMENUSELECTION', selection: 'home'});
+    }
 
     render() {
         const { activeItem } = this.state;
@@ -163,14 +178,19 @@ class TopLatestPrices extends React.Component {
     }
 
     render() {
-        console.log('price_updates ' + this.props.price_updates.toString());
-        this.props.price_updates.forEach((update) => {
-           this.state.prices[update['data']['pair']] = update['data']['price'];
-        });
+        // console.log('price_updates ' + this.props.price_updates.toString());
+        for (var i = this.props.price_updates.length-1; i > -1; i--) {
+            const update = this.props.price_updates[i];
+            this.state.prices[update['data']['pair']] = update['data']['price'];
+        }
+
+        // this.props.price_updates.forEach((update) => {
+        //    this.state.prices[update['data']['pair']] = update['data']['price'];
+        // });
 
         let myMenu = []
         for (var key in this.state.prices) {
-            myMenu.push(<Menu.Item>{key} + ': ' + {this.state.prices[key]}</Menu.Item>)
+            myMenu.push(<Menu.Item>{key}: {this.state.prices[key]}</Menu.Item>)
         }
 
         return (
@@ -197,7 +217,7 @@ class CreateAlertPricePoint extends React.Component {
               contentType: "application/json; charset=utf-8",
               headers: {"Authorization": "JWT " + reduxState.jwt_token},
               url: "/createalert",
-              data: JSON.stringify({alert: 'pricepoint', pair: this.state.pair, exchange: this.state.exchange, point: this.state.point, below_above: this.state.below_above}),
+              data: JSON.stringify({alert: 'pricepoint', pair: this.state.pair, exchange: this.state.exchange, point: this.state.point, below_above: this.state.below_above, email_notification_value: reduxState.email_notification_value}),
               dataType: "json",
               success: (data) => {
                       console.log("Server said this on createalert: ");
@@ -240,6 +260,22 @@ class CreateAlertPricePoint extends React.Component {
 }
 
 
+class AddNotificationList extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {emailValue: ''};
+    }
+
+    render() {
+        return(
+          <React.Fragment>
+              <Checkbox label='Email' onChange={(e, data) => reduxStore.dispatch({type: 'SETEMAILNOTIFICATIONVALUE', email_notification_value: data.checked})}/>
+          </React.Fragment>
+        );
+    }
+}
+
+
 class CreateAlert extends React.Component {
     constructor(props) {
         super(props);
@@ -260,21 +296,18 @@ class CreateAlert extends React.Component {
                     <Button basic color='orange' onClick={() => this.setState({activeAlert: 'price_divergence'})}>
                       Price Divergence
                     </Button>
-                    <Button basic color='yellow' onClick={() => this.setState({activeAlert: 'profitloss'})}>
-                      Profit/Loss
-                    </Button>
                     <Button basic color='violet'>
                       Volume Point
                     </Button>
                     <Button basic color='purple'>
                       Volume Percentage Change
                     </Button>
-                    <Button basic color='pink'>
-                      New Coin
-                    </Button>
                   </div>
 
-        {this.state.activeAlert == 'price_point' ? (<CreateAlertPricePoint />) : null}
+
+                  {this.state.activeAlert == 'price_point' ? (<CreateAlertPricePoint />) : null}
+                  Notifications:
+                  <AddNotificationList/>
               </Segment>
         );
     }
@@ -325,26 +358,86 @@ class Alerts extends React.Component {
     }
 }
 
+class InterestingEvents extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+        const data = [{
+          time: '2:00 Feb 22',
+          alert: 'Price spike',
+          market: 'BTC_ETH',
+          exchange: 'Poloniex',
+          message: '5.8% ^'
+        }]
+
+        this.props.interesting_events.forEach((event) => {
+           data.push({time: event['data']['event_time'], alert: event['data']['event_type'], market: event['data']['market'], exchange: event['data']['exchange'], message: event['data']['message']})
+        });
+
+        const columns = [{
+            Header: 'Time',
+            accessor: 'time' // String-based value accessors!
+          }, {
+            Header: 'Alert',
+            accessor: 'alert'
+          }, {
+            Header: 'Market',
+            accessor: 'market'
+          }, {
+            Header: 'Exchange',
+            accessor: 'exchange'
+          }, {
+            Header: 'Message',
+            accessor: 'message'
+          }
+        ]
+
+        return <ReactTable
+        data={data}
+        columns={columns}
+        />
+    }
+}
+
 class App extends React.Component {
     constructor(props) {
         super(props);
-        console.log("wtf")
         // this.state.updated_myalerts is to prevent infinite loop of changing redux state.
-        this.state = {number_alerts: 0, alert_notification: [], subscribed_alerts: [], logged_in: false, updated_myalerts: true, price_updates: []}
+        this.state = {number_alerts: 0, alert_notification: [], subscribed_alerts: [], logged_in: false, updated_myalerts: true, price_updates: [], interesting_events: []}
         this.state.alert_notification.push(<List.Item>Test Alert Notification</List.Item>);
         this.state.subscribed_alerts.push(<List.Item>Test My Alert</List.Item>);
 
-        console.log("Hello");
 
-        const socket = io('http://46.101.82.15:443/');
+        const socket = io('http://46.101.82.15:8080/');
+        // const socket1 = io('http://46.101.82.15:8080/test');
+        // console.log("xDddddddddddd")
+        // socket1.on('connect', function() {
+        //         console.log("i'm conected")
+        //     });
+
+        socket.on('connection_established', (data) => {
+            console.log('Connection established ' + data);
+            document.title = "E" + document.title;
+        });
 
         socket.on('price_update', (data) => {
             console.log("Price update")
             console.log(data);
-            this.state.price_updates.push(data);
+            console.log("NOT ADDING TO PRICE AUPDATRES");
+            // this.state.price_updates.push(data);
             console.log(this.state.price_updates);
             this.setState({});
             //socket.emit('my other event', { my: 'data' });
+        });
+
+        console.log('Registering interesting event')
+        socket.on('interesting_event', (data) => {
+            console.log("Interesting event")
+            console.log(data);
+            this.state.interesting_events.push(data);
+            this.setState({});
         });
 
         // Only rerenders on setState not just this.state.something = whatever
@@ -424,12 +517,14 @@ class App extends React.Component {
                                 <Alerts subscribed_alerts={state_.subscribed_alerts} alert_notification={state_.alert_notification}/>
                         ) : null
                     }
+                    {reduxState.topMenuSelection == 'home' ? (
+                                <InterestingEvents interesting_events={state_.interesting_events}/>
+                        ) : null
+                    }
                 </React.Fragment>
             );
     }
 }
-
-console.log("Hello");
 
 ReactDOM.render(<App/>, document.getElementById('root'));
 //const element = <h1>Hello, world</h1>;

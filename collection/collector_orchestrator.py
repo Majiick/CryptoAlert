@@ -131,11 +131,6 @@ def message_rate_calculation():
 
 
 
-
-                    ####################
-
-
-
             last_time_reported = int(time.time())
 
 

@@ -2,3 +2,5 @@ python-socketio
 pyzmq
 eventlet
 aiohttp
+flask
+websockets

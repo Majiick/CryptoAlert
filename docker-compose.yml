@@ -48,6 +48,7 @@ services:
                         dockerfile: ./alert_generation/socketio_server/Dockerfile
                 ports:
                         - "443:443"
+                        - "8080:8080"
                 networks:
                         - globalnet
         postgres:

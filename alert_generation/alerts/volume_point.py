@@ -22,6 +22,9 @@ class VolumePoint(Alert):
 
         return False
 
+    def get_interesting_event_description(self):
+        return 'Not Implemented'
+
     @staticmethod
     def get_all_from_db() -> List[Alert]:
         ret: List[Alert] = []
@@ -34,6 +37,7 @@ class VolumePoint(Alert):
                 alert.created_by_user = row['created_by_user']
                 alert.fulfilled = row['fulfilled']
                 alert.repeat = row['repeat']
+                alert.broadcast_interesting_event_on_trigger = row['broadcast_interesting_event_on_trigger']
                 ret.append(alert)
 
         return ret

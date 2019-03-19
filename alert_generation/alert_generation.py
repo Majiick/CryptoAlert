@@ -87,7 +87,7 @@ while True:
                             # https://www.calculatorsoup.com/calculators/algebra/percent-difference-calculator.php
                             price_difference = abs(last_trade_price[exchange][pair] - last_trade_price[other_exchange][pair]) / ((last_trade_price[exchange][pair] + last_trade_price[other_exchange][pair])/2.0) * 100
 
-                            if price_difference > 0.1:
+                            if price_difference > 0.01:
                                 skip = False
                                 for plcord in placed_orders:
                                     if plcord[1] == pair:
@@ -114,6 +114,7 @@ while True:
                                     # logger.info('Price difference percentage for {}: {}'.format(pair, price_difference))
                                     # logger.info('Price difference for {}: {}'.format(pair, abs(last_trade_price[exchange][pair] - last_trade_price[other_exchange][pair])))
                                     # logger.info('Price for {} at {} is {}. While at {} it is {}.'.format(pair, exchange, last_trade_price[exchange][pair], other_exchange, last_trade_price[other_exchange][pair]))
+                                    # pub_socketio_channel.send_json({'measurement': 'interesting_event', 'message': 'Price for {} at {} is {}. While at {} it is {}.'.format(pair, exchange, last_trade_price[exchange][pair], other_exchange, last_trade_price[other_exchange][pair])})
                             else:
                                 # logger.debug('{} {}'.format(pair, price_difference))
                                 pass
@@ -131,5 +132,10 @@ while True:
                     pub_socketio_channel.send_json({'measurement': 'alert', 'alert': 'price_point', 'price_point': alert.__dict__, 'trade': json[0]})
                     if not alert.repeat:
                         alert.mark_fulfilled()
+                    if alert.broadcast_interesting_event_on_trigger:
+                        interesting_event = alert.get_interesting_event_description()
+                        interesting_event['measurement'] = 'interesting_event'
+                        logger.debug(interesting_event)
+                        pub_socketio_channel.send_json(interesting_event)
 
 
