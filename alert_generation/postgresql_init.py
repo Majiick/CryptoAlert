@@ -45,3 +45,7 @@ with engine.begin() as conn:
     conn.execute(s, user_pk=user_pk)
     s = text("insert into PRICE_PERCENTAGE_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, time_frame, broadcast_interesting_event_on_trigger, alert_type) values (DEFAULT, :user_pk, FALSE, TRUE, '*', '*', 5, 'up', 300, TRUE, 'pricepercentage')")
     conn.execute(s, user_pk=user_pk)
+
+
+    s = text("insert into INTERESTING_EVENT (event_time, exchange, market, message, event_type) values (-5, 'testing xchange', 'test_test', 'test msg', 'test event')")
+    conn.execute(s)

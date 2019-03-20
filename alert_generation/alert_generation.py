@@ -38,6 +38,28 @@ def calculate_volume(pair: str, exchange: str):
     return ret
 
 
+def write_interesting_event_to_db(event):
+    '''
+    CREATE TABLE IF NOT EXISTS INTERESTING_EVENT(
+      id SERIAL PRIMARY KEY,
+      event_time BIGINT NOT NULL,
+      exchange TEXT NOT NULL,
+      market TEXT NOT NULL,
+      message TEXT NOT NULL,
+      event_type TEXT NOT NULL
+    );
+    '''
+
+    assert('event_time' in event)
+    assert('exchange' in event)
+    assert('market' in event)
+    assert('message' in event)
+    assert('event_type' in event)
+    with engine.begin() as conn:
+        s = text(
+            "insert into INTERESTING_EVENT (event_time, exchange, market, message, event_type) values (:event_time, :exchange, :market, :message, :event_type)")
+        conn.execute(s, event_time=event['event_time'], exchange=event['exchange'], market=event['market'], message=event['message'], event_type=event['event_type'])
+
 # https://www.calculatorsoup.com/calculators/algebra/percent-difference-calculator.php
 def percentage_difference(v1, v2):
     return abs(v1 - v2) / ((v1 + v2)/2.0) * 100
@@ -134,6 +156,7 @@ while True:
                         alert.mark_fulfilled()
                     if alert.broadcast_interesting_event_on_trigger:
                         interesting_event = alert.get_interesting_event_description()
+                        write_interesting_event_to_db(interesting_event)
                         interesting_event['measurement'] = 'interesting_event'
                         logger.debug(interesting_event)
                         pub_socketio_channel.send_json(interesting_event)

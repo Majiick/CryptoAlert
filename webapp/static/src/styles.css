@@ -1,0 +1,17 @@
+.flash-enter {
+  opacity: 0.01;
+}
+
+.flash-enter.flash-enter-active {
+  opacity: 1;
+  transition: opacity 500ms ease-in;
+}
+
+.flash-leave {
+  opacity: 1;
+}
+
+.flash-leave.flash-leave-active {
+  opacity: 0.01;
+  transition: opacity 300ms ease-in;
+}

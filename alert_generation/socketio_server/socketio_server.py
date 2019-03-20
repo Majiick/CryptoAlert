@@ -77,75 +77,81 @@ import multiprocessing
 from multiprocessing import Process, Queue
 from typing import Any
 import websockets
-
+import random
+import json
+import logging
+from postgres_init import engine
+from sqlalchemy.sql import text
 
 
 logger.info("Started socketio server")
 
-sio = socketio.AsyncServer(async_mode='aiohttp', logger=True, engineio_logger=True)  # logger=True, engineio_logger=True
-app = web.Application()
-sio.attach(app)
-
-@sio.on('connect')
-async def connect(sid, environ):
-    logger.info("connect {}".format(sid))
-    await sio.emit('connection_established', {'data': 'Connection established.'})
-
-
-async def process_queue(queue):
-    print('wtflol')
-    while True:
-        await sio.sleep(0.1)
-        try:
-            json = queue.get_nowait()
-            logger.debug(json)
-
-            if json['measurement'] == 'latest_price':
-                await sio.emit('price_update', {'data': json})
-            elif json['measurement'] == 'alert':
-                await sio.emit('alert', {'data': json})
-            elif json['measurement'] == 'interesting_event':
-                await sio.emit('interesting_event', {'data': json})
-            else:
-                assert(False)
-        except multiprocessing.queues.Empty:
-            await sio.sleep(0.1)
-
 
 def listen_to_alert_pub(queue):
+    logger.debug('Running listen_to_alert_pub')
+
     context = zmq.Context()
     sub_socket = context.socket(zmq.SUB)  # Subs to alert_generation pub socket
     sub_socket.connect('tcp://alert_generation:28000')
     sub_socket.setsockopt_string(zmq.SUBSCRIBE, '')
 
-    print('here666')
     while True:
         json = sub_socket.recv_json()
         logger.debug(json)
         queue.put(json)
 
 
-# t = threading.Thread(target=listen_to_alert_pub)
-# t.start()
-
 if __name__ == '__main__':
     queue: Any = Queue()
-    sio.start_background_task(process_queue, queue)
+    local_storage: Any = []
+
+async def collect_queue():
+    logger.debug('Running collect_queue')
+    while True:
+        try:
+            recv_json = queue.get_nowait()
+            local_storage.append(recv_json)
+        except multiprocessing.queues.Empty:
+            await asyncio.sleep(0.0)
+
+async def websocket_connection(websocket, path):
+    logger.debug('New websocket connection.')
+    last_count_sent = 0
+
+    interesting_events = []
+    with engine.begin() as conn:
+        result = conn.execute(text("SELECT * FROM INTERESTING_EVENT LIMIT 1000"))
+        for row in result:
+            interesting_events.append(dict(row))
+
+    await websocket.send(json.dumps({'type': 'initial_interesting_events', 'data': interesting_events}))
+    # await websocket.send(json.dumps({'type': 'initial_prices', 'data': ''}))
+
+    while True:
+        if len(local_storage) > last_count_sent:
+            recv_json = local_storage[last_count_sent]
+            logger.debug(recv_json)
+            last_count_sent += 1
+
+            if recv_json['measurement'] == 'latest_price':
+                await websocket.send(json.dumps({'type': 'price_update', 'data': recv_json}))
+            elif recv_json['measurement'] == 'alert':
+                await websocket.send(json.dumps({'type': 'alert', 'data': recv_json}))
+            elif recv_json['measurement'] == 'interesting_event':
+                await websocket.send(json.dumps({'type': 'interesting_event', 'data': recv_json}))
+            else:
+                assert (False)
+        else:
+            await asyncio.sleep(0.0)
+
+
+if __name__ == '__main__':
     p: Any = Process(target=listen_to_alert_pub, args=(queue,))
     p.start()
 
-    print('here111')
-    web.run_app(app)
-    print('here3')
-    # p.join()
-    # app = web.Application()
-    # app = socketio.Middleware(sio, app)
-    # # debug.spew()
-    # queue: Any = Queue()
-    # # sio.start_background_task(target=process_queue(queue))
-    # p: Any = Process(target=listen_to_alert_pub, args=(queue,))
-    # p.start()
-    #
-    # print('here2')
-    # eventlet.wsgi.server(eventlet.listen(('', 443)), app)
-    # p.join()
+    start_server = websockets.serve(websocket_connection, '0.0.0.0', 8080)
+
+    asyncio.ensure_future(collect_queue())
+    asyncio.get_event_loop().run_until_complete(start_server)
+    asyncio.get_event_loop().run_forever()
+    p.join()

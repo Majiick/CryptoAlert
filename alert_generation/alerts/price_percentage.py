@@ -28,10 +28,12 @@ class PricePercentage(Alert):
         self.direction = direction
         self.time_frame = time_frame
 
-        # The 3 variables below are to be used when constructing the get interesting event description.
-        self.price_percentage_diff = 0.0
-        self.min_price = 0.0
-        self.max_price = 0.0
+        # The 4 variables below are to be used when constructing the get interesting event description.
+        self.triggered_price_percentage_diff = 0.0
+        self.triggered_min_price = 0.0
+        self.triggered_max_price = 0.0
+        self.triggered_pair = ''
+        self.triggered_exchange = ''
 
     def trigger(self, trade) -> bool:
         time_started_query = time.time()
@@ -83,9 +85,11 @@ class PricePercentage(Alert):
                     ret = True
 
             if ret:
-                self.min_price = min_price
-                self.max_price = max_price
-                self.price_percentage_diff = percentage_diff
+                self.triggered_min_price = min_price
+                self.triggered_max_price = max_price
+                self.triggered_price_percentage_diff = percentage_diff
+                self.triggered_exchange = trade['tags']['exchange']
+                self.triggered_pair = trade['tags']['pair']
 
 
         time_to_query = time.time() - time_started_query
@@ -106,11 +110,11 @@ class PricePercentage(Alert):
         event_type TEXT NOT NULL
         );
         '''
-        assert(self.min_price is not None)
-        assert(self.max_price is not None)
-        assert(self.price_percentage_diff is not None)
-        return {'event_time': -1, 'exchange': self.exchange, 'market': self.pair, 'event_type': 'pricepercentage',
-                'message': 'Price spiked by {} from {} to {} in the last {} seconds.'.format(self.price_percentage_diff, self.min_price, self.max_price, self.time_frame)}
+        assert(self.triggered_min_price is not None)
+        assert(self.triggered_max_price is not None)
+        assert(self.triggered_price_percentage_diff is not None)
+        return {'event_time': -1, 'exchange': self.triggered_exchange, 'market': self.triggered_pair, 'event_type': 'pricepercentage',
+                'message': 'Price spiked by {} from {} to {} in the last {} seconds.'.format(self.triggered_price_percentage_diff, self.triggered_min_price, self.triggered_max_price, self.time_frame)}
 
     @staticmethod
     def get_all_from_db() -> List[Alert]:

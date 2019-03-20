@@ -6,6 +6,8 @@ import ReactDOM from 'react-dom';
 import { createStore } from 'redux';
 import ReactTable from "react-table";
 import 'react-table/react-table.css'
+import './styles.css';
+import { CSSTransitionGroup } from 'react-transition-group'
 
 const reduxState = {
     jwt_token: '',
@@ -173,28 +175,28 @@ class TopMenu extends React.Component {
 class TopLatestPrices extends React.Component {
     constructor(props) {
         super(props);
-
-        this.state = {prices: {}}
     }
 
     render() {
-        // console.log('price_updates ' + this.props.price_updates.toString());
-        for (var i = this.props.price_updates.length-1; i > -1; i--) {
-            const update = this.props.price_updates[i];
-            this.state.prices[update['data']['pair']] = update['data']['price'];
-        }
-
-        // this.props.price_updates.forEach((update) => {
-        //    this.state.prices[update['data']['pair']] = update['data']['price'];
-        // });
-
         let myMenu = []
-        for (var key in this.state.prices) {
-            myMenu.push(<Menu.Item>{key}: {this.state.prices[key]}</Menu.Item>)
+        if ('POLONIEX' in this.props.latest_prices) {
+            for (var key in this.props.latest_prices['POLONIEX']) {
+                const price = this.props.latest_prices['POLONIEX'][key];
+                myMenu.push(<div key={price}><Menu.Item>{key}: {price}</Menu.Item></div>)
+            }
+        } else {
+            console.warn('No poloniex');
         }
 
         return (
-          <Menu Inverted> {myMenu} </Menu>
+            <CSSTransitionGroup
+                transitionName="flash"
+                transitionEnterTimeout={500}
+                transitionLeaveTimeout={300}>
+
+                <Menu Inverted> {myMenu} </Menu>
+            </CSSTransitionGroup
+        >
         );
     }
 }
@@ -405,51 +407,87 @@ class App extends React.Component {
     constructor(props) {
         super(props);
         // this.state.updated_myalerts is to prevent infinite loop of changing redux state.
-        this.state = {number_alerts: 0, alert_notification: [], subscribed_alerts: [], logged_in: false, updated_myalerts: true, price_updates: [], interesting_events: []}
+        // latest_prices is structured as latest_prices[exchange][pair] = 13.21
+        this.state = {number_alerts: 0, alert_notification: [], subscribed_alerts: [], logged_in: false, updated_myalerts: true, latest_prices: {}, interesting_events: []}
         this.state.alert_notification.push(<List.Item>Test Alert Notification</List.Item>);
         this.state.subscribed_alerts.push(<List.Item>Test My Alert</List.Item>);
 
+        var ws = new WebSocket("ws://46.101.82.15:8080/");
+        ws.onmessage = (event) => {
+            /*
+            {"type": "price_update", "data": {"measurement": "latest_price", "exchange": "POLONIEX", "pair": "BTC_LTC", "price": 0.014792}}
+             */
 
-        const socket = io('http://46.101.82.15:8080/');
-        // const socket1 = io('http://46.101.82.15:8080/test');
-        // console.log("xDddddddddddd")
-        // socket1.on('connect', function() {
-        //         console.log("i'm conected")
-        //     });
-
-        socket.on('connection_established', (data) => {
-            console.log('Connection established ' + data);
-            document.title = "E" + document.title;
-        });
-
-        socket.on('price_update', (data) => {
-            console.log("Price update")
+            var data = JSON.parse(event.data);
             console.log(data);
-            console.log("NOT ADDING TO PRICE AUPDATRES");
-            // this.state.price_updates.push(data);
-            console.log(this.state.price_updates);
-            this.setState({});
-            //socket.emit('my other event', { my: 'data' });
-        });
-
-        console.log('Registering interesting event')
-        socket.on('interesting_event', (data) => {
-            console.log("Interesting event")
-            console.log(data);
-            this.state.interesting_events.push(data);
-            this.setState({});
-        });
-
-        // Only rerenders on setState not just this.state.something = whatever
-        socket.on('alert', (data) => {
-            if(this.state.logged_in) {
+            if (data['type'] == 'price_update') {
+                if (!(data['data']['exchange'] in this.state.latest_prices)) {
+                    this.state.latest_prices[data['data']['exchange']] = {};
+                    console.log('here');
+                }
+                this.state.latest_prices[data['data']['exchange']][data['data']['pair']] = data['data']['price']
+                console.log(this.state.latest_prices)
+                this.setState({});
+            } else if (data['type'] == 'interesting_event') {
+                console.log('Interesting event');
+                this.state.interesting_events.push(data);
+                this.setState({});
+            } else if (data['type'] == 'alert') {
                 console.log('ALERT!!!');
                 this.state.alert_notification.push(<List.Item>{JSON.stringify(data)}</List.Item>);
                 this.setState({});
-                console.log(data);
-                console.log(this.state.subscribed_alerts);
+            } else if (data['type'] == 'initial_interesting_events') {
+                data['data'].forEach((event) => {
+                    this.state.interesting_events.push({'data': event});
+                });
+                console.log(this.state.interesting_events);
+                this.setState({});
+            } else {
+              console.warn('Dont know data type.');
             }
-        });
+
+        }
+
+        // const socket = io('http://46.101.82.15:8080/');
+        // // const socket1 = io('http://46.101.82.15:8080/test');
+        // // console.log("xDddddddddddd")
+        // // socket1.on('connect', function() {
+        // //         console.log("i'm conected")
+        // //     });
+        //
+        // socket.on('connection_established', (data) => {
+        //     console.log('Connection established ' + data);
+        //     document.title = "E" + document.title;
+        // });
+        //
+        // socket.on('price_update', (data) => {
+        //     console.log("Price update")
+        //     console.log(data);
+        //     console.log("NOT ADDING TO PRICE AUPDATRES");
+        //     // this.state.price_updates.push(data);
+        //     console.log(this.state.price_updates);
+        //     this.setState({});
+        //     //socket.emit('my other event', { my: 'data' });
+        // });
+        //
+        // console.log('Registering interesting event')
+        // socket.on('interesting_event', (data) => {
+        //     console.log("Interesting event")
+        //     console.log(data);
+        //     this.state.interesting_events.push(data);
+        //     this.setState({});
+        // });
+        //
+        // // Only rerenders on setState not just this.state.something = whatever
+        // socket.on('alert', (data) => {
+        //     if(this.state.logged_in) {
+        //         console.log('ALERT!!!');
+        //         this.state.alert_notification.push(<List.Item>{JSON.stringify(data)}</List.Item>);
+        //         this.setState({});
+        //         console.log(data);
+        //         console.log(this.state.subscribed_alerts);
+        //     }
+        // });
 
         let reduxChangedState = () => {
             if (reduxState.jwt_token) {
@@ -508,11 +546,10 @@ class App extends React.Component {
 
     render() {
         const state_ = this.state;
-        console.log(reduxState.topMenuSelection);
             return (
                 <React.Fragment>
                     <TopMenu number_alerts={ this.state.number_alerts} />
-                    <TopLatestPrices price_updates={state_.price_updates}/>
+                    <TopLatestPrices latest_prices={state_.latest_prices}/>
                     {reduxState.topMenuSelection == 'alerts' ? (
                                 <Alerts subscribed_alerts={state_.subscribed_alerts} alert_notification={state_.alert_notification}/>
                         ) : null

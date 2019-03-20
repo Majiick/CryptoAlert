@@ -3,4 +3,5 @@ pyzmq
 eventlet
 aiohttp
 flask
-websockets
+#Websockets 6.0 because 7.0 has internal 1006 error crash no reason.
+websockets==6.0
