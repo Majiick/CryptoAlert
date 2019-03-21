@@ -18,7 +18,7 @@ with engine.begin() as conn:
     ### TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY TEMPORARY
     ############################################################################################################################
     try:
-        conn.execute("insert into REGISTERED_USER (user_pk, user_name, password, email) values (DEFAULT, 'Ecoste', 'password', 'ecostequse@gmail.com')")
+        conn.execute("insert into REGISTERED_USER (user_pk, user_name, password, email) values (DEFAULT, 'Ecoste', crypt('password', gen_salt('md5')), 'ecostequse@gmail.com')")
     except sqlalchemy.exc.IntegrityError:  # User already exists
         pass
     ############################################################################################################################

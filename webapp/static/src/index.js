@@ -88,30 +88,67 @@ class LoginButtonAndForm extends React.Component {
         this.state = {
             login: '',
             password: '',
-	    open: false
+	        open: false,
+            openRegister: false,
+            email: ''
         };
     }
 
     render() {
-	const {open} = this.state;
-      return (
-	<React.Fragment>
-	      <Button
-	         content={open ? 'Login' : 'Login'}
-	         negative={open}
-	         positive={!open}
-	         onClick={() => this.setState({open: !this.state.open})}
-	      />
+	    const {open} = this.state;
+        const {openRegister} = this.state;
 
-	  <TransitionablePortal onClose={() => this.setState({open: false})} open={open}>
-          <Segment style={{left: '40%', position: 'fixed', top: '50%', zIndex: 1000}}>
-              <Input focus placeholder='User' onChange={(e) => this.state.login = e.target.value} />
-              <Input focus type='password' placeholder='Password' onChange={(e) => this.state.password = e.target.value} />
-              <Button onClick={(e) => this.handleLoginClick(e)}>Login</Button>
-          </Segment>
-	  </TransitionablePortal>
-	</React.Fragment>
+        return (
+            <React.Fragment>
+                  <Button
+                     content={open ? 'Login' : 'Login'}
+                     negative={open}
+                     positive={!open}
+                     onClick={() => this.setState({open: !this.state.open})}
+                  />
+
+
+            {openRegister ?
+                <TransitionablePortal onClose={() => this.setState({openRegister: false})} open={openRegister}>
+                      <Segment style={{left: '40%', position: 'fixed', top: '50%', zIndex: 1000}}>
+                          <Input focus placeholder='User' onChange={(e) => this.state.login = e.target.value} />
+                          <Input focus type='password' placeholder='Password' onChange={(e) => this.state.password = e.target.value} />
+                          <Input focus placeholder='Email' onChange={(e) => this.state.email = e.target.value} />
+                          <Button onClick={(e) => this.handleRegisterClick(e)}>Register</Button>
+                      </Segment>
+                  </TransitionablePortal>
+                :
+                  <TransitionablePortal onClose={() => this.setState({open: false})} open={open}>
+                      <Segment style={{left: '40%', position: 'fixed', top: '50%', zIndex: 1000}}>
+                          <Input focus placeholder='User' onChange={(e) => this.state.login = e.target.value} />
+                          <Input focus type='password' placeholder='Password' onChange={(e) => this.state.password = e.target.value} />
+                          <Button onClick={(e) => this.handleLoginClick(e)}>Login</Button>
+                          <Button onClick={(e) => this.setState({openRegister: true})}>Register</Button>
+                      </Segment>
+                  </TransitionablePortal>
+            }
+            </React.Fragment>
+
         );
+    }
+
+    handleRegisterClick() {
+        console.log('Registering');
+        console.log(this.state.login);
+        console.log(this.state.password);
+        console.log(this.state.email);
+
+        $.ajax({
+              type: "POST",
+              contentType: "application/json; charset=utf-8",
+              url: "/register",
+              data: JSON.stringify({username: this.state.login, password: this.state.password, email: this.state.email}),
+              success: function (data) {
+                      alert(data);
+                    }
+        });
+
+        this.setState({openRegister: false, open: false});
     }
 
     handleLoginClick() {
@@ -447,47 +484,6 @@ class App extends React.Component {
             }
 
         }
-
-        // const socket = io('http://46.101.82.15:8080/');
-        // // const socket1 = io('http://46.101.82.15:8080/test');
-        // // console.log("xDddddddddddd")
-        // // socket1.on('connect', function() {
-        // //         console.log("i'm conected")
-        // //     });
-        //
-        // socket.on('connection_established', (data) => {
-        //     console.log('Connection established ' + data);
-        //     document.title = "E" + document.title;
-        // });
-        //
-        // socket.on('price_update', (data) => {
-        //     console.log("Price update")
-        //     console.log(data);
-        //     console.log("NOT ADDING TO PRICE AUPDATRES");
-        //     // this.state.price_updates.push(data);
-        //     console.log(this.state.price_updates);
-        //     this.setState({});
-        //     //socket.emit('my other event', { my: 'data' });
-        // });
-        //
-        // console.log('Registering interesting event')
-        // socket.on('interesting_event', (data) => {
-        //     console.log("Interesting event")
-        //     console.log(data);
-        //     this.state.interesting_events.push(data);
-        //     this.setState({});
-        // });
-        //
-        // // Only rerenders on setState not just this.state.something = whatever
-        // socket.on('alert', (data) => {
-        //     if(this.state.logged_in) {
-        //         console.log('ALERT!!!');
-        //         this.state.alert_notification.push(<List.Item>{JSON.stringify(data)}</List.Item>);
-        //         this.setState({});
-        //         console.log(data);
-        //         console.log(this.state.subscribed_alerts);
-        //     }
-        // });
 
         let reduxChangedState = () => {
             if (reduxState.jwt_token) {

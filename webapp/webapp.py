@@ -106,7 +106,7 @@ def login():
     password = request.json['password']
 
     with engine.begin() as conn:
-        result = conn.execute(text("select user_pk from REGISTERED_USER WHERE LOWER(user_name) = LOWER(:user_name) AND password = :password"), user_name = user_name, password = password)
+        result = conn.execute(text("select user_pk from REGISTERED_USER WHERE LOWER(user_name) = LOWER(:user_name) AND password = crypt(:password, password)"), user_name = user_name, password = password)
         row = result.fetchone()
 
         if row:
@@ -123,7 +123,33 @@ def login():
 
 @app.route('/register', methods=['POST'])
 def register():
-    pass
+    user_name = request.json['username']
+    password = request.json['password']
+    email = request.json['email']
+
+    # TODO(Proper validation)
+    if not user_name:
+        return 'Registration unsuccessful.'
+    if not password:
+        return 'Registration unsuccessful.'
+    if not email:
+        return 'Registration unsuccessful.'
+
+    with engine.begin() as conn:
+        result = conn.execute(text(
+            "select user_pk from REGISTERED_USER WHERE LOWER(user_name) = LOWER(:user_name)"),
+                              user_name=user_name)
+        row = result.fetchone()
+        if row:
+            return 'Username taken'
+        else:
+            conn.execute(text(
+                "INSERT INTO REGISTERED_USER (user_pk, user_name, password, email) VALUES (DEFAULT, :user_name, crypt(:password, gen_salt('md5')), :email)"),
+                user_name=user_name, password=password, email=email)
+
+            return 'Registered successfully'
+
+    return 'Registration unsuccessful.'
 
 
 @app.route('/logintest')
