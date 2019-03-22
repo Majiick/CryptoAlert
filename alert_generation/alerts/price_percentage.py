@@ -37,6 +37,7 @@ class PricePercentage(Alert):
 
     def trigger(self, trade) -> bool:
         time_started_query = time.time()
+        ret = False
         if (trade['tags']['pair'].lower() == self.pair.lower() or self.pair == '*') and (trade['tags']['exchange'].lower() == self.exchange.lower() or self.exchange == '*'):
             # Result: ResultSet({'('trade', None)': [{'time': '2019-02-28T10:58:08.306845796Z', 'max': 1.67000003, 'min': 1.67000003}]})
             # After list(result): [[{'time': '2019-02-28T11:01:11.533978751Z', 'max': 0.00042362, 'min': 0.00042362}]]
@@ -129,6 +130,7 @@ class PricePercentage(Alert):
                 alert.fulfilled = row['fulfilled']
                 alert.repeat = row['repeat']
                 alert.broadcast_interesting_event_on_trigger = row['broadcast_interesting_event_on_trigger']
+                alert.alert_type = row['alert_type']
                 ret.append(alert)
 
         return ret

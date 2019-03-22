@@ -1,3 +1,5 @@
+import mlogging
+from mlogging import logger
 from flask import Flask, render_template, current_app, redirect, url_for, request, jsonify
 import zmq
 import pandas as pd
@@ -53,7 +55,7 @@ class User(UserMixin):
 
 def authenticate_jwt(user_name, password):
     with engine.begin() as conn:
-        result = conn.execute(text("select user_pk from REGISTERED_USER WHERE LOWER(user_name) = LOWER(:user_name) AND password = :password"), user_name = user_name, password = password)
+        result = conn.execute(text("select user_pk from REGISTERED_USER WHERE LOWER(user_name) = LOWER(:user_name) AND password = crypt(:password, password)"), user_name = user_name, password = password)
         row = result.fetchone()
 
         if row:
@@ -168,12 +170,19 @@ def get_subscribed_alerts():
 
     with engine.begin() as conn:
         ret['price_point_alert'] = []
+        ret['price_percentage_alert'] = []
         result = conn.execute(text("SELECT exchange, pair, point, direction FROM PRICE_POINT_ALERT WHERE created_by_user = :user_pk"),
                               user_pk=current_identity.get_id())  # current_identity is JWT's proxy for User class
-
         for row in result:
             d = dict(row.items())
             ret['price_point_alert'].append(d)
+
+        result = conn.execute(
+            text("SELECT exchange, pair, point, direction, time_frame FROM PRICE_PERCENTAGE_ALERT WHERE created_by_user = :user_pk"),
+            user_pk=current_identity.get_id())  # current_identity is JWT's proxy for User class
+        for row in result:
+            d = dict(row.items())
+            ret['price_percentage_alert'].append(d)
 
     return jsonify(ret)
 
@@ -196,14 +205,23 @@ def create_alert():
 
     print(request.json, flush=True)
     with engine.begin() as conn:
-        s = text('insert into PRICE_POINT_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, alert_type) values (DEFAULT, :user_pk, FALSE, FALSE, :exchange, :pair, :point, :direction, "pricepoint") RETURNING alert_pk')
-        cursor = conn.execute(s, user_pk=current_identity.get_id(), exchange=request.json['exchange'][0], pair=request.json['pair'][0], point=float(request.json['point']), direction=dir)
-        created_alert_pk = cursor.fetchone()[0]
+        if request.json['alert'] == 'pricepoint':
+            s = text("insert into PRICE_POINT_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, alert_type) values (DEFAULT, :user_pk, FALSE, FALSE, :exchange, :pair, :point, :direction, 'pricepoint') RETURNING alert_pk")
+            cursor = conn.execute(s, user_pk=current_identity.get_id(), exchange=request.json['exchange'][0], pair=request.json['pair'][0], point=float(request.json['point']), direction=dir)
+            created_alert_pk = cursor.fetchone()[0]
+        elif request.json['alert'] == 'pricepercentage':
+            s = text(
+                "insert into PRICE_PERCENTAGE_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, time_frame, alert_type) values (DEFAULT, :user_pk, FALSE, FALSE, :exchange, :pair, :point, :direction, :time_frame, 'pricepercentage') RETURNING alert_pk")
+            cursor = conn.execute(s, user_pk=current_identity.get_id(), exchange=request.json['exchange'][0],
+                                  pair=request.json['pair'][0], point=float(request.json['point']), direction=dir,
+                                  time_frame=int(request.json['time_frame']))
+            created_alert_pk = cursor.fetchone()[0]
+        else:
+            logger.error('Create alert received unknown alert: {}'.format(request.json['alert']))
 
-        # TEMPORARY TEMPORARY
-        #################################################################################################################
-        s = text("INSERT INTO EMAIL_NOTIFICATION (notification_pk, notify_on_which_alert, user_to_notify) VALUES (DEFAULT, :alert_pk, :user_pk)")
-        conn.execute(s, alert_pk=created_alert_pk, user_pk=current_identity.get_id())
+        if bool(request.json['email_notification_value']):
+            s = text("INSERT INTO EMAIL_NOTIFICATION (notification_pk, notify_on_which_alert, user_to_notify) VALUES (DEFAULT, :alert_pk, :user_pk)")
+            conn.execute(s, alert_pk=created_alert_pk, user_pk=current_identity.get_id())
 
     return jsonify({'success': True})
 

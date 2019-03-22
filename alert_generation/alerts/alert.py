@@ -13,6 +13,7 @@ class Alert(ABC):
         self.fulfilled = None
         self.repeat = None
         self.broadcast_interesting_event_on_trigger = None
+        self.alert_type = None
 
     @abstractmethod
     def trigger(self, trade) -> bool:

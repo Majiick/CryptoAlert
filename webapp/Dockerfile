@@ -32,11 +32,14 @@ RUN sed -i "s/TIME/$(date)/g" /code/static/dist/index.html
 
 WORKDIR /code
 COPY /common/postgres/requirements.txt postgres_requirements.txt
+COPY /common/logging/requirements.txt logging_requirements.txt
 RUN pip install -r postgres_requirements.txt
+RUN pip install -r logging_requirements.txt
 RUN pip install -r requirements.txt
 RUN pip install mypy
 
 COPY /common/postgres/ /code/
+COPY /common/logging/ /code/
 
 
 WORKDIR /code

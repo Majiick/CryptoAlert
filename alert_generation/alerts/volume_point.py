@@ -38,6 +38,7 @@ class VolumePoint(Alert):
                 alert.fulfilled = row['fulfilled']
                 alert.repeat = row['repeat']
                 alert.broadcast_interesting_event_on_trigger = row['broadcast_interesting_event_on_trigger']
+                alert.alert_type = row['alert_type']
                 ret.append(alert)
 
         return ret
