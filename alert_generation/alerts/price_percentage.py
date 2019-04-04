@@ -7,6 +7,7 @@ from sqlalchemy.sql import text
 from typing import List, Type, Dict, Any
 from mlogging import logger
 import time
+from datetime import datetime
 
 
 class PricePercentage(Alert):

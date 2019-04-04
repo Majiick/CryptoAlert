@@ -8,6 +8,7 @@ import ReactTable from "react-table";
 import 'react-table/react-table.css'
 import './styles.css';
 import { CSSTransitionGroup } from 'react-transition-group'
+import TradingViewWidget, { Themes } from 'react-tradingview-widget';
 
 const belowAboveOptions = [
           { key: 'above', text: 'Above', value: 'above' },
@@ -845,32 +846,102 @@ class InterestingEvents extends React.Component {
           message: '5.8% ^'
         }]
 
+
+
+        var i = 0;
         this.props.interesting_events.forEach((event) => {
-           data.push({time: event['data']['event_time'], alert: event['data']['event_type'], market: event['data']['market'], exchange: event['data']['exchange'], message: event['data']['message']})
+            var c = 'Not available';
+            if (i > this.props.interesting_events.length-1-5) {
+                c = <TradingViewWidget
+                                symbol="BTC/COINBASE:BTCUSD"
+                                width="650"
+                                height="350"
+                                locale="en"
+                                interval={60}
+                                hide_legend="true"
+                                save_image="false"
+                                toolbar_bg="#f1f3f6"
+                                theme={Themes.DARK}
+                              />
+            }
+
+            i += 1;
+
+           data.push({time: event['data']['event_time'], alert: event['data']['event_type'], market: event['data']['market'], exchange: event['data']['exchange'], message: event['data']['message'],
+                      chart: c
+                     });
         });
+        data.reverse()
 
         const columns = [{
-            Header: 'Time',
-            accessor: 'time' // String-based value accessors!
-          }, {
-            Header: 'Alert',
-            accessor: 'alert'
-          }, {
-            Header: 'Market',
-            accessor: 'market'
-          }, {
-            Header: 'Exchange',
-            accessor: 'exchange'
-          }, {
-            Header: 'Message',
-            accessor: 'message'
-          }
+                Header: 'Time',
+                accessor: 'time', // String-based value accessors!
+                width:30
+              }, {
+                Header: 'Alert',
+                accessor: 'alert',
+                width: 150
+              }, {
+                Header: 'Market',
+                accessor: 'market',
+                width: 75
+              }, {
+                Header: 'Exchange',
+                accessor: 'exchange',
+                width: 125
+              }, {
+                Header: 'Message',
+                accessor: 'message',
+                width: 300,
+                style: { 'white-space': 'unset' } // allow for words wrap inside only this cell
+              },
+              {
+                Header: 'Chart',
+                accessor: 'chart',
+                  width:650
+              }
         ]
 
         return <ReactTable
-        data={data}
-        columns={columns}
+            data={data}
+            columns={columns}
+            defaultPageSize="5"
+
         />
+    }
+}
+
+class Test1 extends React.Component {
+    constructor(props) {
+        super(props);
+    }
+
+    render() {
+        // "width": 350,
+		 //  "height": 350,
+		 //  "symbol": "BTC/COINBASE:BTCUSD",
+		 //  "interval": "60",
+		 //  "timezone": "Etc/UTC",
+		 //  "theme": "Light",
+		 //  "style": "1",
+		 //  "locale": "en",
+		 //  "toolbar_bg": "#f1f3f6",
+		 //  "enable_publishing": false,
+		 //  "hide_legend": true,
+		 //  "save_image": false,
+		 //  "container_id": "tradingview_a677d"
+
+        return (<TradingViewWidget
+                symbol="BTC/COINBASE:BTCUSD"
+                width="350"
+                height="350"
+                locale="en"
+                interval="60"
+                hide_legend="true"
+                save_image="false"
+                toolbar_bg="#f1f3f6"
+                theme={Themes.DARK}
+              />);
     }
 }
 
