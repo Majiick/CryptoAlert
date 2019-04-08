@@ -227,9 +227,12 @@ class BittrexWebsockets(ContinuousDataAPI):
         if market_name in self.market_nonce_numbers:
             assert(not deltas_to_execute)
             if not self.market_nonce_numbers[market_name] == int(json['N']) - 1:
-                logger.debug(market_name)
-                logger.debug(self.market_nonce_numbers[market_name])
-                logger.debug(json['N'])
+                if market_name in self.cached_received_exchange_deltas:
+                    dlts = self.cached_received_exchange_deltas[market_name]
+                else:
+                    dlts = None
+                logger.error('Trade nonce doesnt line up for market {}, last nonce number is {} and nonce right now is {}. QueryExchangeNonce is {} and cached deltas is {} '
+                             .format(market_name, self.market_nonce_numbers[market_name], json['N'], self.market_queryExchangeState_nonce[market_name], dlts))
                 assert(self.market_nonce_numbers[market_name] == int(json['N']) - 1)  # Make sure that update nonce lines up with last update.
             assert (self.market_nonce_numbers[market_name] == int(json['N']) - 1)  # Make sure that update nonce lines up with last update.
         else:
@@ -238,6 +241,11 @@ class BittrexWebsockets(ContinuousDataAPI):
                 logger.debug('Making sure cached updates line up with received updated')
                 assert (int(deltas_to_execute[-1]['N']) == int(json['N']) - 1)  # Make sure that cached updates line up with the received update
             else:
+                if not (self.market_queryExchangeState_nonce[market_name] == int(json['N']) - 1):
+                    logger.error(
+                        'Trade nonce doesnt line up for market {}, last nonce number is {} and nonce right now is {}. QueryExchangeNonce is {} and cached deltas is {} '
+                        .format(market_name, self.market_nonce_numbers[market_name], json['N'],
+                                self.market_queryExchangeState_nonce[market_name], dlts))
                 assert(self.market_queryExchangeState_nonce[market_name] == int(json['N']) - 1)
 
         if len(deltas_to_execute) > 0:

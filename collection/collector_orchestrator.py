@@ -27,8 +27,8 @@ def startup_queue():
 
     ######################################################### TEMPORARY
     # zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': 'POLONIEX'})
-    # for exchange_name, _ in continuous_data_apis.items():
-    #     zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': exchange_name})
+    for exchange_name, _ in continuous_data_apis.items():
+        zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': exchange_name})
 
 
 def restart_worker(exchange_name: str):
@@ -176,6 +176,7 @@ def collect_missing_historical_data():
         times_tried INTEGER
     );
     '''
+    return
     logger.info('Starting collect_missing_historical_data')
     # Check for any missing data using the continuous worker interrupted service measure
     while True:
@@ -256,39 +257,78 @@ def generate_ohlc():
     );
     :return:
     """
-    last_converted_time = time.time_ns() - 10*float('1e+9')
-
-    '''
-    Fiinsh this up. Needs to sort by market and exchange.
-    '''
-    return
+    last_converted_time = time.time_ns() - 121*float('1e+9')
     while True:
+        logger.debug('Running generate_ohlc loop')
         with engine.begin() as conn:
-            result = conn.execute(text("SELECT * FROM TRADE WHERE trade_time > :last_converted_time SORT BY trade_time ASC"), last_converted_time=last_converted_time)
+            result = conn.execute(text("SELECT * FROM TRADE WHERE trade_time > :last_converted_time ORDER BY trade_time ASC"), last_converted_time=last_converted_time)
+            last_converted_time = time.time_ns() - 121*float('1e+9')
 
-        second_frame_trades = {}
+        exchange_to_market_to_trades = {}
+        trade_count = 0
         for trade in result:
-            second_time = trade['trade_time'] / float('1e+9')
-            if second_time not in second_frame_trades:
-                second_frame_trades[second_time] = []
-            second_frame_trades[second_time].append(trade)
+            trade_count += 1
+            if trade['exchange'] not in exchange_to_market_to_trades:
+                exchange_to_market_to_trades[trade['exchange']] = {}
 
-        minute_frame_trades = {}
-        for second, trades in second_frame_trades.items():
-            if int(second/60) not in minute_frame_trades:
-                minute_frame_trades[int(second/60)] = []
-            minute_frame_trades[int(second / 60)].extend(trades)
+            if trade['market'] not in exchange_to_market_to_trades[trade['exchange']]:
+                exchange_to_market_to_trades[trade['exchange']][trade['market']] = []
 
-        for minute, trades in minute_frame_trades.items():
-            high = float('-inf')
-            low = float('+inf')
+            exchange_to_market_to_trades[trade['exchange']][trade['market']].append(trade)
 
-            for trade in trades:
-                if trade['price'] > high:
-                    high = trade['price']
+        logger.debug('Trade amount {}'.format(trade_count))
 
-                if trade['price'] < low:
-                    low = trade['price']
+        for exchange, market_to_trades in exchange_to_market_to_trades.items():
+            for market, trades_ in market_to_trades.items():
+
+                second_frame_trades = {}
+                for trade in trades_:
+                    second_time = trade['trade_time'] / float('1e+9')
+                    if second_time not in second_frame_trades:
+                        second_frame_trades[second_time] = []
+                    second_frame_trades[second_time].append(trade)
+
+                minute_frame_trades = {}
+                for second, trades in second_frame_trades.items():
+                    if int(second/60) not in minute_frame_trades:
+                        minute_frame_trades[int(second/60)] = []
+                    minute_frame_trades[int(second / 60)].extend(trades)
+
+                sticks_to_write = []
+                for minute, trades in minute_frame_trades.items():
+                    open = float(trades[0]['price'])
+                    close = float(trades[-1]['price'])
+                    high = float('-inf')
+                    low = float('+inf')
+                    volume = 0
+
+                    for trade in trades:
+                        if trade['price'] > high:
+                            high = trade['price']
+
+                        if trade['price'] < low:
+                            low = trade['price']
+
+                        volume += float(trade['size'])
+
+                    # [ CloseTime, OpenPrice, HighPrice, LowPrice, ClosePrice, Volume ]
+                    sticks_to_write.append([(minute+1)*60, open, high, low, close, volume])
+
+                logger.debug('Writing {} ohlc for market {} on exchange {}'.format(len(minute_frame_trades), market, exchange))
+                with engine.begin() as conn:
+                    for stick in sticks_to_write:
+                        conn.execute(text("INSERT INTO OHLC (id, close_time, open_price, high_price, low_price, close_price, volume, exchange, market, time_interval) VALUES (DEFAULT, :close_time, :open_price, :high_price, :low_price, :close_price, :volume, :exchange, :market, :time_interval)"),
+                                     close_time=stick[0],
+                                     open_price=stick[1],
+                                     high_price=stick[2],
+                                     low_price=stick[3],
+                                     close_price=stick[4],
+                                     volume=stick[5],
+                                     exchange=exchange,
+                                     market=market,
+                                     time_interval=60)
+
+        time.sleep(60)
 
 
 

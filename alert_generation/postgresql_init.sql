@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS INTERRUPTION(
 
 CREATE TABLE IF NOT EXISTS OHLC(
   id SERIAL PRIMARY KEY,
-  close_time BIGINT NOT NULL,
+  close_time BIGINT NOT NULL, /* In Seconds */
   open_price float(53) NOT NULL,
   high_price float(53) NOT NULL,
   low_price float(53) NOT NULL,
