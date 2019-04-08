@@ -151,7 +151,8 @@ while True:
                         notification.notify()
 
                     logger.info('pp fired off {} {}. On trade {}'.format(type(alert), alert.__dict__, json))
-                    pub_socketio_channel.send_json({'measurement': 'alert', 'alert_type': alert.alert_type, 'alert': alert.__dict__, 'trade': json[0], 'event_description': alert.get_interesting_event_description()})
+                    if not alert.broadcast_interesting_event_on_trigger:
+                        pub_socketio_channel.send_json({'measurement': 'alert', 'alert_type': alert.alert_type, 'alert': alert.__dict__, 'trade': json[0], 'event_description': alert.get_interesting_event_description()})
                     if not alert.repeat:
                         alert.mark_fulfilled()
                     if alert.broadcast_interesting_event_on_trigger:

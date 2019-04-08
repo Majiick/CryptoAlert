@@ -10,6 +10,3059 @@ import './styles.css';
 import { CSSTransitionGroup } from 'react-transition-group'
 import TradingViewWidget, { Themes } from 'react-tradingview-widget';
 
+const tradingViewMarkets = {
+  'KCBTC': [
+    'BINANCE'
+  ],
+  'TUMBTC': [
+    'BINANCE',
+    'BITTREX',
+    'POLONIEX',
+    'HUOBI',
+    'HITBTC'
+  ],
+  'LCBTC': [
+    'BINANCE'
+  ],
+  'SPBTC': [
+    'BINANCE',
+    'HUOBI'
+  ],
+  'TUMUSD': [
+    'BITTREX',
+    'KRAKEN',
+    'BINANCE'
+  ],
+  'TMUSD': [
+    'BITFINEX'
+  ],
+  'KCUSD': [
+    'BINANCE'
+  ],
+  'SHUSD': [
+    'BITFINEX'
+  ],
+  'TUMUSDT': [
+    'BINANCE',
+    'HUOBI',
+    'POLONIEX',
+    'HITBTC'
+  ],
+  'SPUSD': [
+    'BINANCE'
+  ],
+  'RLUSD': [
+    'BITTREX'
+  ],
+  'TUMEUR': [
+    'KRAKEN'
+  ],
+  'KCETH': [
+    'BINANCE'
+  ],
+  'LCUSD': [
+    'BINANCE'
+  ],
+  'NTBTC': [
+    'BITTREX'
+  ],
+  'TUMETH': [
+    'BINANCE',
+    'BITTREX',
+    'KRAKEN',
+    'POLONIEX',
+    'HITBTC'
+  ],
+  'RLBTC': [
+    'BITTREX'
+  ],
+  'SHBTC': [
+    'BITFINEX'
+  ],
+  'TUMKRW': [
+    'BITHUMB'
+  ],
+  'SPETH': [
+    'BINANCE'
+  ],
+  'LCETH': [
+    'BINANCE'
+  ],
+  'ASHBTC': [
+    'HUOBI'
+  ],
+  'TMBTC': [
+    'BITFINEX'
+  ],
+  'TUMXBT': [
+    'KRAKEN'
+  ],
+  'WARKUSD': [
+    'BITTREX'
+  ],
+  'LCBNB': [
+    'BINANCE'
+  ],
+  'NTUUSDT': [
+    'HITBTC'
+  ],
+  'TUMBNB': [
+    'BINANCE'
+  ],
+  'SHETH': [
+    'BITFINEX'
+  ],
+  'TUMCAD': [
+    'KRAKEN'
+  ],
+  'SPBNB': [
+    'BINANCE'
+  ],
+  'WARKBTC': [
+    'BITTREX'
+  ],
+  'ASHETH': [
+    'HUOBI'
+  ],
+  'UNBTC': [
+    'HUOBI'
+  ],
+  'TMETH': [
+    'BITFINEX'
+  ],
+  'NTUBTC': [
+    'HITBTC'
+  ],
+  'ANBTC': [
+    'BINANCE',
+    'HUOBI'
+  ],
+  'ABIBTC': [
+    'BINANCE'
+  ],
+  'TCBTC': [
+    'BINANCE',
+    'HUOBI'
+  ],
+  'PRBTC': [
+    'BINANCE',
+    'BITFINEX',
+    'HUOBI'
+  ],
+  'AXBTC': [
+    'BITTREX',
+    'BITFINEX',
+    'HUOBI'
+  ],
+  'ANUSD': [
+    'BINANCE'
+  ],
+  'AVESBTC': [
+    'BINANCE',
+    'BITTREX',
+    'HITBTC'
+  ],
+  'TCUSD': [
+    'BINANCE',
+    'BITFINEX'
+  ],
+  'ABIUSD': [
+    'BINANCE'
+  ],
+  'AXUSD': [
+    'BITFINEX'
+  ],
+  'ANETH': [
+    'BINANCE'
+  ],
+  'AVESUSDT': [
+    'BINANCE',
+    'HUOBI'
+  ],
+  'LOUSD': [
+    'BITFINEX'
+  ],
+  'PRUSD': [
+    'BITFINEX',
+    'BINANCE'
+  ],
+  'TCETH': [
+    'BINANCE',
+    'BITFINEX'
+  ],
+  'ABIETH': [
+    'BINANCE'
+  ],
+  'AVESUSD': [
+    'BITTREX',
+    'BINANCE',
+    'HITBTC'
+  ],
+  'ANBNB': [
+    'BINANCE'
+  ],
+  'PRETH': [
+    'BINANCE'
+  ],
+  'AXKRW': [
+    'BITHUMB'
+  ],
+  'ETKRW': [
+    'BITHUMB'
+  ],
+  'ABIBNB': [
+    'BINANCE'
+  ],
+  'INGSBTC': [
+    'BITTREX'
+  ],
+  'AVESETH': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'TCKRW': [
+    'BITHUMB'
+  ],
+  'INGSUSD': [
+    'BITTREX'
+  ],
+  'ICCUSDT': [
+    'HUOBI'
+  ],
+  'TCBNB': [
+    'BINANCE'
+  ],
+  'AVESTUSD': [
+    'BINANCE'
+  ],
+  'AVESUSDC': [
+    'BINANCE'
+  ],
+  'AXETH': [
+    'BITTREX',
+    'BITFINEX'
+  ],
+  'ICCBTC': [
+    'HUOBI'
+  ],
+  'AVESKRW': [
+    'BITHUMB'
+  ],
+  'AVESBNB': [
+    'BINANCE'
+  ],
+  'THUSD': [
+    'BITFINEX',
+    'BITMEX',
+    'COINBASE',
+    'KRAKEN',
+    'BITSTAMP',
+    'BITTREX',
+    'BINANCE'
+  ],
+  'THUSDT': [
+    'BINANCE',
+    'POLONIEX',
+    'BITTREX'
+  ],
+  'OSUSD': [
+    'BITFINEX',
+    'BINANCE',
+    'KRAKEN'
+  ],
+  'NJBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'THBTC': [
+    'BINANCE',
+    'BITTREX',
+    'BITFINEX',
+    'POLONIEX',
+    'COINBASE'
+  ],
+  'OSBTC': [
+    'BINANCE',
+    'BITFINEX'
+  ],
+  'OSUSDT': [
+    'BINANCE',
+    'HUOBI'
+  ],
+  'VXBTC': [
+    'BINANCE'
+  ],
+  'THEUR': [
+    'KRAKEN',
+    'COINBASE',
+    'BITSTAMP',
+    'BITFINEX'
+  ],
+  'TCUSD': [
+    'BITFINEX',
+    'KRAKEN',
+    'COINBASE'
+  ],
+  'NGBTC': [
+    'BINANCE'
+  ],
+  'LFBTC': [
+    'BINANCE'
+  ],
+  'TCBTC': [
+    'BINANCE',
+    'BITTREX',
+    'BITFINEX'
+  ],
+  'TCUSDT': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'THKRW': [
+    'KORBIT'
+  ],
+  'DOBTC': [
+    'BINANCE'
+  ],
+  'NJUSD': [
+    'BINANCE'
+  ],
+  'OSM19': [
+    'BITMEX'
+  ],
+  'TPUSD': [
+    'BITFINEX'
+  ],
+  'OSEUR': [
+    'KRAKEN'
+  ],
+  'THBRL': [
+    'MERCADO'
+  ],
+  'MC2BTC': [
+    'BITTREX'
+  ],
+  'VXUSD': [
+    'BINANCE'
+  ],
+  'THXBT': [
+    'KRAKEN'
+  ],
+  'NJETH': [
+    'BINANCE'
+  ],
+  'VNBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'LCBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'ENBTC': [
+    'BINANCE'
+  ],
+  'EPBTC': [
+    'BINANCE',
+    'BITTREX',
+    'BITFINEX',
+    'POLONIEX'
+  ],
+  'EQBTC': [
+    'BINANCE',
+    'BITFINEX'
+  ],
+  'CNBTC': [
+    'BINANCE',
+    'BITTREX',
+    'BITFINEX'
+  ],
+  'DNBTC': [
+    'BINANCE'
+  ],
+  'VNUSD': [
+    'BITTREX'
+  ],
+  'DDBTC': [
+    'BITTREX'
+  ],
+  'VNUSDT': [
+    'BITTREX'
+  ],
+  'EPEUR': [
+    'KRAKEN'
+  ],
+  'DDUSD': [
+    'BITTREX'
+  ],
+  'VNBNB': [
+    'BINANCE'
+  ],
+  'EPUSD': [
+    'KRAKEN',
+    'BITTREX',
+    'BITFINEX'
+  ],
+  'CNUSD': [
+    'BITFINEX'
+  ],
+  'EPUSDT': [
+    'POLONIEX'
+  ],
+  'ADSUSD': [
+    'BITTREX'
+  ],
+  'LCUSD': [
+    'BITTREX',
+    'BITFINEX',
+    'BINANCE'
+  ],
+  'IFUSD': [
+    'BITFINEX'
+  ],
+  'DNUSD': [
+    'BITFINEX',
+    'BINANCE'
+  ],
+  'EQUSD': [
+    'BITFINEX',
+    'BINANCE'
+  ],
+  'RTUSD': [
+    'BITFINEX'
+  ],
+  'FRUSD': [
+    'BITTREX'
+  ],
+  'TEUSD': [
+    'BITFINEX'
+  ],
+  'VRUSD': [
+    'BITTREX'
+  ],
+  'BTC': [
+    'HITBTC'
+  ],
+  'NTKRW': [
+    'BITHUMB'
+  ],
+  'ADSBTC': [
+    'BITTREX'
+  ],
+  'FRBTC': [
+    'BITTREX'
+  ],
+  'EQETH': [
+    'BINANCE'
+  ],
+  'VRBTC': [
+    'BITTREX'
+  ],
+  'EPETH': [
+    'BINANCE'
+  ],
+  'EPXBT': [
+    'KRAKEN'
+  ],
+  'LCETH': [
+    'BINANCE'
+  ],
+  'EPKRW': [
+    'BITHUMB'
+  ],
+  'DNETH': [
+    'BINANCE'
+  ],
+  'RXBTC': [
+    'BINANCE',
+    'BITFINEX',
+    'BITTREX'
+  ],
+  'RXUSDT': [
+    'BINANCE',
+    'BITTREX',
+    'HUOBI'
+  ],
+  'RXUSD': [
+    'BITFINEX',
+    'BINANCE',
+    'BITTREX'
+  ],
+  'NBBTC': [
+    'BINANCE',
+    'BITFINEX'
+  ],
+  'NTBTC': [
+    'BINANCE'
+  ],
+  'RXM19': [
+    'BITMEX'
+  ],
+  'UBEBTC': [
+    'BITTREX'
+  ],
+  'HETABTC': [
+    'BINANCE'
+  ],
+  'RXETH': [
+    'BINANCE'
+  ],
+  'XUSD': [
+    'BITTREX'
+  ],
+  'XBTC': [
+    'BITTREX'
+  ],
+  'USDBTC': [
+    'BITTREX'
+  ],
+  'HCBTC': [
+    'BITTREX'
+  ],
+  'IXBTC': [
+    'BITTREX'
+  ],
+  'UBEUSD': [
+    'BITTREX'
+  ],
+  'NBUSD': [
+    'BITFINEX'
+  ],
+  'RXXBT': [
+    'BITMEX'
+  ],
+  'TCBTC': [
+    'BITTREX'
+  ],
+  'OPHT': [
+    'HUOBI'
+  ],
+  'HCUSD': [
+    'BITTREX'
+  ],
+  'USDUSD': [
+    'BITTREX'
+  ],
+  'RXKRW': [
+    'BITHUMB'
+  ],
+  'USDETH': [
+    'BITTREX'
+  ],
+  'IXUSD': [
+    'BITTREX'
+  ],
+  'KNUSD': [
+    'BITFINEX'
+  ],
+  'HETAUSD': [
+    'BINANCE'
+  ],
+  'KSUSD': [
+    'BITTREX'
+  ],
+  'RXUSDC': [
+    'BINANCE'
+  ],
+  'NTUSD': [
+    'BINANCE'
+  ],
+  'OPUSDT': [
+    'HUOBI'
+  ],
+  'SDUSD': [
+    'BITFINEX'
+  ],
+  'RXXRP': [
+    'BINANCE'
+  ],
+  'RXTUSD': [
+    'BINANCE'
+  ],
+  'RXBNB': [
+    'BINANCE'
+  ],
+  'RACBTC': [
+    'BITTREX'
+  ],
+  'NBETH': [
+    'BINANCE'
+  ],
+  'MTGKRW': [
+    'BITHUMB'
+  ],
+  'OPBTC': [
+    'HUOBI'
+  ],
+  'KSBTC': [
+    'BITTREX'
+  ],
+  'NTETH': [
+    'BINANCE'
+  ],
+  'HETAETH': [
+    'BINANCE'
+  ],
+  'USDUSDT': [
+    'BINANCE'
+  ],
+  'RXEUR': [
+    'BITFINEX'
+  ],
+  'OYOBTC': [
+    'BINANCE'
+  ],
+  'YWUSD': [
+    'BITFINEX'
+  ],
+  'OYOUSD': [
+    'BINANCE'
+  ],
+  'OYOETH': [
+    'BINANCE'
+  ],
+  'YWBTC': [
+    'BITFINEX'
+  ],
+  'EEBTC': [
+    'HUOBI'
+  ],
+  'OYOBNB': [
+    'BINANCE'
+  ],
+  'GGUSD': [
+    'BITFINEX'
+  ],
+  'CCBTC': [
+    'HUOBI',
+    'HITBTC'
+  ],
+  'GGETH': [
+    'BITFINEX'
+  ],
+  'YWETH': [
+    'BITFINEX'
+  ],
+  'EEETH': [
+    'HUOBI'
+  ],
+  'CCETH': [
+    'HUOBI'
+  ],
+  'OYOWBTC': [
+    'HITBTC'
+  ],
+  'YWUSDLONGS': [
+    'BITFINEX'
+  ],
+  'YWUSDSHORTS': [
+    'BITFINEX'
+  ],
+  'GGUSDSHORTS': [
+    'BITFINEX'
+  ],
+  'YWBTCSHORTS': [
+    'BITFINEX'
+  ],
+  'YWETHLONGS': [
+    'BITFINEX'
+  ],
+  'GGETHLONGS': [
+    'BITFINEX'
+  ],
+  'GGETHSHORTS': [
+    'BITFINEX'
+  ],
+  'GGUSDLONGS': [
+    'BITFINEX'
+  ],
+  'YWBTCLONGS': [
+    'BITFINEX'
+  ],
+  'YWETHSHORTS': [
+    'BITFINEX'
+  ],
+  'SDTUSD': [
+    'KRAKEN',
+    'BITTREX',
+    'POLONIEX',
+    'HITBTC'
+  ],
+  'PUSD': [
+    'BITTREX'
+  ],
+  'PBTC': [
+    'BITTREX'
+  ],
+  'BQBTC': [
+    'BITTREX'
+  ],
+  'SDTBTC': [
+    'POLONIEX'
+  ],
+  'BQUSD': [
+    'BITTREX'
+  ],
+  'STUSD': [
+    'BITFINEX'
+  ],
+  'PPUSD': [
+    'BITTREX'
+  ],
+  'TKUSD': [
+    'BITFINEX'
+  ],
+  'SDSBTC': [
+    'BITTREX'
+  ],
+  'TNUSD': [
+    'BITFINEX'
+  ],
+  'KGUSD': [
+    'BITTREX'
+  ],
+  'SDSUSD': [
+    'BITTREX'
+  ],
+  'DCUSD': [
+    'BITFINEX'
+  ],
+  'KGBTC': [
+    'BITTREX'
+  ],
+  'PPBTC': [
+    'BITTREX'
+  ],
+  'SDCPAX': [
+    'BINANCE'
+  ],
+  'SDSPAX': [
+    'BINANCE'
+  ],
+  'UUBTC': [
+    'HUOBI',
+    'HITBTC'
+  ],
+  'SDCUSDT': [
+    'BINANCE'
+  ],
+  'SDTHUSD': [
+    'HUOBI'
+  ],
+  'TKBTC': [
+    'BITFINEX',
+    'HUOBI',
+    'HITBTC'
+  ],
+  'SDTUSDC': [
+    'POLONIEX'
+  ],
+  'SDSUSDT': [
+    'BINANCE'
+  ],
+  'SDCTUSD': [
+    'BINANCE'
+  ],
+  'CBTC': [
+    'HUOBI'
+  ],
+  'SDSTUSD': [
+    'BINANCE'
+  ],
+  'SDSUSDC': [
+    'BINANCE'
+  ],
+  'IPBTC': [
+    'HUOBI'
+  ],
+  'KGETH': [
+    'BITTREX'
+  ],
+  'TTUSDT': [
+    'HITBTC'
+  ],
+  'TNETH': [
+    'BITFINEX'
+  ],
+  'UUETH': [
+    'HUOBI'
+  ],
+  'TKETH': [
+    'HUOBI',
+    'BITFINEX'
+  ],
+  'CETH': [
+    'HUOBI'
+  ],
+  'TTBTC': [
+    'HITBTC'
+  ],
+  'SDKRWB': [
+    'HITBTC'
+  ],
+  'SDBON': [
+    'BITMEX'
+  ],
+  'SDUSDC': [
+    'HITBTC'
+  ],
+  'SDDAI': [
+    'HITBTC'
+  ],
+  'SEBTC': [
+    'HITBTC'
+  ],
+  'SDGUSD': [
+    'HITBTC'
+  ],
+  'TKUSDT': [
+    'HITBTC'
+  ],
+  'CXBTC': [
+    'BINANCE',
+    'HUOBI'
+  ],
+  'OTUSD': [
+    'BITFINEX'
+  ],
+  'CXUSDT': [
+    'BINANCE',
+    'HITBTC'
+  ],
+  'OTABTC': [
+    'BINANCE',
+    'HUOBI'
+  ],
+  'OSTBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'OTXBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'NSBTC': [
+    'BINANCE'
+  ],
+  'CXUSD': [
+    'BINANCE'
+  ],
+  'OTAUSD': [
+    'BINANCE'
+  ],
+  'OTBTC': [
+    'BITFINEX'
+  ],
+  'OSTUSD': [
+    'BINANCE'
+  ],
+  'CXETH': [
+    'BINANCE'
+  ],
+  'OTAUSDT': [
+    'BINANCE',
+    'HUOBI'
+  ],
+  'QXUSD': [
+    'BITFINEX'
+  ],
+  'OTXUSD': [
+    'BINANCE'
+  ],
+  'OTAETH': [
+    'BINANCE'
+  ],
+  'OCUSD': [
+    'BITTREX'
+  ],
+  'OSUSD': [
+    'BITFINEX'
+  ],
+  'TCUSDT': [
+    'HUOBI'
+  ],
+  'NTUSD': [
+    'BITFINEX'
+  ],
+  'OPUSD': [
+    'BITTREX'
+  ],
+  'ONUSD': [
+    'BITTREX'
+  ],
+  'OPBTC': [
+    'BITTREX'
+  ],
+  'NSUSD': [
+    'BINANCE'
+  ],
+  'OSTETH': [
+    'BINANCE'
+  ],
+  'OCBTC': [
+    'BITTREX'
+  ],
+  'ONBTC': [
+    'BITTREX'
+  ],
+  'OTEUR': [
+    'BITFINEX'
+  ],
+  'HTBTC': [
+    'BITTREX'
+  ],
+  'HTUSDT': [
+    'HITBTC'
+  ],
+  'NKUSDT': [
+    'HITBTC'
+  ],
+  'PLUSDT': [
+    'HITBTC'
+  ],
+  'OSTUSDT': [
+    'BINANCE',
+    'HUOBI'
+  ],
+  'OTXETH': [
+    'BINANCE'
+  ],
+  'CXKRW': [
+    'BITHUMB'
+  ],
+  'OTETH': [
+    'BITFINEX'
+  ],
+  'ICBTC': [
+    'HUOBI'
+  ],
+  'NSETH': [
+    'BINANCE'
+  ],
+  'MPUSD': [
+    'BITFINEX'
+  ],
+  'OTABNB': [
+    'BINANCE'
+  ],
+  'CXBNB': [
+    'BINANCE'
+  ],
+  'NSKRW': [
+    'BITHUMB'
+  ],
+  'GNISUSD': [
+    'BITTREX'
+  ],
+  'NTBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'NTUSDT': [
+    'BINANCE',
+    'HUOBI',
+    'HITBTC'
+  ],
+  'MGBTC': [
+    'BINANCE',
+    'BITTREX',
+    'BITFINEX',
+    'POLONIEX'
+  ],
+  'AXBTC': [
+    'BINANCE'
+  ],
+  'MGUSD': [
+    'BITFINEX',
+    'BINANCE',
+    'BITTREX'
+  ],
+  'STBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'NGBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'NGUSDT': [
+    'BINANCE'
+  ],
+  'NTUSD': [
+    'BINANCE'
+  ],
+  'CNBTC': [
+    'BITTREX',
+    'HUOBI'
+  ],
+  'KUSD': [
+    'BITTREX'
+  ],
+  'KBTC': [
+    'BITTREX'
+  ],
+  'MGUSDT': [
+    'BITTREX',
+    'HUOBI',
+    'BINANCE',
+    'HITBTC'
+  ],
+  'CNUSD': [
+    'BITTREX'
+  ],
+  'MGETH': [
+    'BINANCE',
+    'BITTREX',
+    'BITFINEX'
+  ],
+  'CNUSDT': [
+    'HUOBI'
+  ],
+  'NTETH': [
+    'BINANCE'
+  ],
+  'AXUSD': [
+    'BINANCE'
+  ],
+  'DEUSD': [
+    'BITFINEX'
+  ],
+  'MGTHB': [
+    'BXTH'
+  ],
+  'RSUSD': [
+    'BITFINEX'
+  ],
+  'STUSD': [
+    'BINANCE'
+  ],
+  'MNUSD': [
+    'BITFINEX'
+  ],
+  'NLUSD': [
+    'BITFINEX'
+  ],
+  'MNIUSD': [
+    'POLONIEX'
+  ],
+  'RBSBTC': [
+    'BITTREX'
+  ],
+  'AXETH': [
+    'BINANCE'
+  ],
+  'AXUSDT': [
+    'HITBTC'
+  ],
+  'NTBNB': [
+    'BINANCE'
+  ],
+  'MNIBTC': [
+    'POLONIEX'
+  ],
+  'STETH': [
+    'BINANCE'
+  ],
+  'MGKRW': [
+    'BITHUMB'
+  ],
+  'CNETH': [
+    'BITTREX'
+  ],
+  'NGBNB': [
+    'BINANCE'
+  ],
+  'HXBTC': [
+    'BINANCE'
+  ],
+  'OLYBTC': [
+    'BINANCE',
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'OWRBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'PTBTC': [
+    'BINANCE'
+  ],
+  'OEBTC': [
+    'BINANCE'
+  ],
+  'IVXBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'OABTC': [
+    'BINANCE'
+  ],
+  'AYBTC': [
+    'BITTREX'
+  ],
+  'OWRUSD': [
+    'BINANCE'
+  ],
+  'OLYUSD': [
+    'BITTREX'
+  ],
+  'AYUSD': [
+    'BITTREX'
+  ],
+  'PTUSD': [
+    'BINANCE'
+  ],
+  'IVXUSD': [
+    'BITTREX'
+  ],
+  'AXUSDT': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'MABTC': [
+    'BITTREX'
+  ],
+  'AIUSDT': [
+    'HUOBI'
+  ],
+  'ALBTC': [
+    'BITTREX'
+  ],
+  'OTUSD': [
+    'BITTREX'
+  ],
+  'AIUSD': [
+    'BITFINEX'
+  ],
+  'OTBTC': [
+    'BITTREX'
+  ],
+  'ARTUSD': [
+    'BITTREX'
+  ],
+  'HXUSD': [
+    'BINANCE'
+  ],
+  'PCUSD': [
+    'BITTREX'
+  ],
+  'MAUSDT': [
+    'BITTREX'
+  ],
+  'ROUSD': [
+    'BITTREX'
+  ],
+  'OAUSD': [
+    'BITFINEX'
+  ],
+  'AXUSD': [
+    'BITFINEX',
+    'BITTREX'
+  ],
+  'TOYUSD': [
+    'BITTREX'
+  ],
+  'INKUSD': [
+    'BITTREX'
+  ],
+  'NKUSD': [
+    'BITFINEX'
+  ],
+  'ASUSD': [
+    'BITFINEX'
+  ],
+  'OYUSD': [
+    'BITFINEX'
+  ],
+  'ARTBTC': [
+    'BITTREX'
+  ],
+  'OEUSD': [
+    'BINANCE'
+  ],
+  'ASCUSD': [
+    'POLONIEX'
+  ],
+  'PCBTC': [
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'AXTUSD': [
+    'BINANCE'
+  ],
+  'TONBTC': [
+    'BITTREX'
+  ],
+  'ASCBTC': [
+    'POLONIEX'
+  ],
+  'ROBTC': [
+    'BITTREX'
+  ],
+  'TOYBTC': [
+    'BITTREX'
+  ],
+  'HXETH': [
+    'BINANCE'
+  ],
+  'OWRETH': [
+    'BINANCE'
+  ],
+  'DABTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'EBTC': [
+    'BINANCE'
+  ],
+  'DAUSDT': [
+    'BINANCE',
+    'BITTREX',
+    'HUOBI'
+  ],
+  'IONBTC': [
+    'BINANCE'
+  ],
+  'DAUSD': [
+    'BINANCE',
+    'KRAKEN',
+    'BITTREX'
+  ],
+  'MBBTC': [
+    'BINANCE'
+  ],
+  'RNBTC': [
+    'BINANCE'
+  ],
+  'RKBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'GIBTC': [
+    'BINANCE'
+  ],
+  'DAM19': [
+    'BITMEX'
+  ],
+  'PPCBTC': [
+    'BINANCE'
+  ],
+  'DXBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'STBTC': [
+    'BINANCE'
+  ],
+  'RDRBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'EUSD': [
+    'BINANCE'
+  ],
+  'DAEUR': [
+    'KRAKEN'
+  ],
+  'DAETH': [
+    'BINANCE'
+  ],
+  'IONUSD': [
+    'BINANCE'
+  ],
+  'NKRBTC': [
+    'BITTREX'
+  ],
+  'RKUSD': [
+    'BITTREX'
+  ],
+  'EETH': [
+    'BINANCE'
+  ],
+  'GIUSD': [
+    'BITFINEX'
+  ],
+  'DATUSD': [
+    'BINANCE'
+  ],
+  'RNUSD': [
+    'BINANCE'
+  ],
+  'RDRUSD': [
+    'BITTREX'
+  ],
+  'DTBTC': [
+    'BITTREX'
+  ],
+  'MBUSD': [
+    'BINANCE'
+  ],
+  'DXUSD': [
+    'BITTREX'
+  ],
+  'PPCUSD': [
+    'BINANCE'
+  ],
+  'STUSD': [
+    'BINANCE'
+  ],
+  'MPBTC': [
+    'BITTREX'
+  ],
+  'VTUSD': [
+    'BITFINEX'
+  ],
+  'IDUSD': [
+    'BITFINEX'
+  ],
+  'EUSDT': [
+    'HUOBI'
+  ],
+  'NTUSD': [
+    'BITTREX',
+    'BITFINEX'
+  ],
+  'DAXBT': [
+    'KRAKEN'
+  ],
+  'CTUSDT': [
+    'HUOBI'
+  ],
+  'IOUSD': [
+    'BITFINEX'
+  ],
+  'DTUSD': [
+    'BITTREX'
+  ],
+  'TMUSD': [
+    'BITFINEX'
+  ],
+  'EONUSD': [
+    'BITTREX'
+  ],
+  'CBTC': [
+    'BINANCE',
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'KYBTC': [
+    'BINANCE'
+  ],
+  'NMBTC': [
+    'BINANCE'
+  ],
+  'CUSD': [
+    'POLONIEX',
+    'BITTREX'
+  ],
+  'NTBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'YSBTC': [
+    'BINANCE',
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'TRBTC': [
+    'POLONIEX'
+  ],
+  'TRUSDT': [
+    'POLONIEX'
+  ],
+  'PNDBTC': [
+    'BITTREX'
+  ],
+  'RNBTC': [
+    'BITTREX'
+  ],
+  'TRATBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'ALTBTC': [
+    'BITTREX'
+  ],
+  'ANUSD': [
+    'BITFINEX'
+  ],
+  'TEEMBTC': [
+    'BINANCE'
+  ],
+  'TORMBTC': [
+    'BINANCE'
+  ],
+  'CETH': [
+    'BINANCE'
+  ],
+  'TORJBTC': [
+    'BINANCE'
+  ],
+  'TRUSD': [
+    'POLONIEX'
+  ],
+  'CUSDT': [
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'YSUSD': [
+    'BITTREX'
+  ],
+  'NGLSBTC': [
+    'BINANCE'
+  ],
+  'KYUSD': [
+    'BINANCE'
+  ],
+  'RNUSD': [
+    'BITTREX'
+  ],
+  'NTUSD': [
+    'BITFINEX'
+  ],
+  'PHRBTC': [
+    'BITTREX'
+  ],
+  'BDUSD': [
+    'BITTREX'
+  ],
+  'PKUSD': [
+    'BITFINEX'
+  ],
+  'NMUSD': [
+    'BINANCE'
+  ],
+  'LRUSD': [
+    'BITTREX'
+  ],
+  'WTUSD': [
+    'BITTREX'
+  ],
+  'OCUSDT': [
+    'HUOBI'
+  ],
+  'IBUSD': [
+    'BITTREX'
+  ],
+  'PHRUSD': [
+    'BITTREX'
+  ],
+  'ENUSD': [
+    'BITFINEX'
+  ],
+  'NGUSD': [
+    'BITFINEX'
+  ],
+  'YNXUSD': [
+    'BITTREX'
+  ],
+  'EEUSD': [
+    'BITFINEX'
+  ],
+  'LSUSD': [
+    'BITTREX'
+  ],
+  'TJUSD': [
+    'BITFINEX'
+  ],
+  'BDBTC': [
+    'BITTREX'
+  ],
+  'EQUSD': [
+    'BITTREX'
+  ],
+  'ASHBTC': [
+    'BINANCE',
+    'POLONIEX',
+    'BITTREX'
+  ],
+  'ENTBTC': [
+    'BINANCE'
+  ],
+  'OGEBTC': [
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'LTBTC': [
+    'BINANCE'
+  ],
+  'OCKBTC': [
+    'BINANCE'
+  ],
+  'GBBTC': [
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'SHUSD': [
+    'BITFINEX'
+  ],
+  'NTBTC': [
+    'BINANCE'
+  ],
+  'GDBTC': [
+    'BINANCE'
+  ],
+  'ATABTC': [
+    'BINANCE'
+  ],
+  'ASHUSD': [
+    'KRAKEN',
+    'BINANCE',
+    'POLONIEX',
+    'BITTREX'
+  ],
+  'CRBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'OGEUSD': [
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'GBUSD': [
+    'POLONIEX',
+    'BITFINEX',
+    'BITTREX'
+  ],
+  'CRUSD': [
+    'BITTREX'
+  ],
+  'ASHEUR': [
+    'KRAKEN'
+  ],
+  'GBUSDT': [
+    'BITTREX'
+  ],
+  'BCBTC': [
+    'HUOBI'
+  ],
+  'ATUSD': [
+    'BITFINEX'
+  ],
+  'ENTUSD': [
+    'BINANCE'
+  ],
+  'GDUSD': [
+    'BINANCE'
+  ],
+  'ENTETH': [
+    'BINANCE'
+  ],
+  'AIUSD': [
+    'BITFINEX'
+  ],
+  'SHBTC': [
+    'BITFINEX'
+  ],
+  'CRUSDT': [
+    'BITTREX'
+  ],
+  'RGNBTC': [
+    'BITTREX'
+  ],
+  'TABTC': [
+    'BITTREX'
+  ],
+  'MTUSD': [
+    'BITTREX'
+  ],
+  'LTUSD': [
+    'BINANCE'
+  ],
+  'THUSD': [
+    'BITFINEX'
+  ],
+  'TAUSDT': [
+    'HUOBI'
+  ],
+  'TAUSD': [
+    'BITFINEX'
+  ],
+  'GXUSD': [
+    'BITFINEX'
+  ],
+  'CTUSD': [
+    'BITTREX'
+  ],
+  'ADUSD': [
+    'BITFINEX'
+  ],
+  'RNUSD': [
+    'BITFINEX'
+  ],
+  'OPEUSD': [
+    'BITTREX'
+  ],
+  'TBUSD': [
+    'BITTREX'
+  ],
+  'ETBTC': [
+    'BINANCE',
+    'HITBTC'
+  ],
+  'ETUSDT': [
+    'BINANCE'
+  ],
+  'UELBTC': [
+    'BINANCE'
+  ],
+  'UNBTC': [
+    'BINANCE',
+    'BITFINEX',
+    'HITBTC'
+  ],
+  'XBTCJPY': [
+    'BITFLYER'
+  ],
+  'CTBTC': [
+    'POLONIEX',
+    'BITTREX'
+  ],
+  'LOBTC': [
+    'BITTREX'
+  ],
+  'UNUSD': [
+    'BITFINEX',
+    'BINANCE'
+  ],
+  'LOUSD': [
+    'BITTREX'
+  ],
+  'UELUSD': [
+    'BINANCE'
+  ],
+  'SNUSD': [
+    'BITFINEX'
+  ],
+  'TCUSD': [
+    'BITTREX'
+  ],
+  'LDCUSD': [
+    'BITTREX'
+  ],
+  'CTUSD': [
+    'POLONIEX',
+    'BITTREX'
+  ],
+  'CNUSD': [
+    'HITBTC'
+  ],
+  'ETBNB': [
+    'BINANCE'
+  ],
+  'TCBTC': [
+    'BITTREX'
+  ],
+  'UELETH': [
+    'BINANCE'
+  ],
+  'UNETH': [
+    'BINANCE',
+    'BITFINEX'
+  ],
+  'LDCBTC': [
+    'BITTREX'
+  ],
+  'UNUSDT': [
+    'HITBTC'
+  ],
+  'DZUSDT': [
+    'HITBTC'
+  ],
+  'LPUSDT': [
+    'HITBTC'
+  ],
+  'SNBTC': [
+    'BITTREX',
+    'BITFINEX'
+  ],
+  'OAMBTC': [
+    'POLONIEX'
+  ],
+  'OAMUSDC': [
+    'POLONIEX'
+  ],
+  'RECUSDT': [
+    'HITBTC'
+  ],
+  'DZETH': [
+    'THEROCKTRADING'
+  ],
+  'AIRBTC': [
+    'HUOBI'
+  ],
+  'TIBTC': [
+    'HUOBI'
+  ],
+  'SNETH': [
+    'BITFINEX'
+  ],
+  'OTABTC': [
+    'HITBTC'
+  ],
+  'TXBTC': [
+    'HITBTC'
+  ],
+  'XTBTC': [
+    'HITBTC'
+  ],
+  'ACEBTC': [
+    'HITBTC'
+  ],
+  'XTETH': [
+    'HITBTC'
+  ],
+  'LPBTC': [
+    'HITBTC'
+  ],
+  'DZBTC': [
+    'HITBTC'
+  ],
+  'RECBTC': [
+    'HITBTC'
+  ],
+  'YPBTC': [
+    'HITBTC'
+  ],
+  'OTAETH': [
+    'HITBTC'
+  ],
+  'TXETH': [
+    'HITBTC'
+  ],
+  'OBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'RSBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'VTBTC': [
+    'BINANCE'
+  ],
+  'NTBTC': [
+    'BINANCE',
+    'BITTREX',
+    'POLONIEX',
+    'BITFINEX'
+  ],
+  'TOBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'ASBTC': [
+    'BINANCE',
+    'POLONIEX'
+  ],
+  'XSBTC': [
+    'BINANCE'
+  ],
+  'OUSD': [
+    'BINANCE'
+  ],
+  'RINBTC': [
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'NTUSD': [
+    'BITFINEX',
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'RSUSD': [
+    'BITTREX'
+  ],
+  'ASUSD': [
+    'BINANCE'
+  ],
+  'AMEBTC': [
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'AMEUSD': [
+    'BITTREX'
+  ],
+  'VTUSD': [
+    'BINANCE'
+  ],
+  'TOUSD': [
+    'BINANCE'
+  ],
+  'NOUSD': [
+    'BITTREX',
+    'KRAKEN'
+  ],
+  'XCUSDT': [
+    'HUOBI'
+  ],
+  'RCUSD': [
+    'BITTREX'
+  ],
+  'NTUSDT': [
+    'HUOBI',
+    'POLONIEX',
+    'HITBTC'
+  ],
+  'OTUSD': [
+    'BITFINEX'
+  ],
+  'UPUSD': [
+    'BITTREX'
+  ],
+  'EOUSD': [
+    'BITTREX'
+  ],
+  'BGUSD': [
+    'BITTREX'
+  ],
+  'SDUSD': [
+    'BITFINEX'
+  ],
+  'AMUSD': [
+    'BITTREX'
+  ],
+  'XSUSD': [
+    'BINANCE'
+  ],
+  'NTUSDC': [
+    'COINBASE'
+  ],
+  'NOBTC': [
+    'BITTREX'
+  ],
+  'UPBTC': [
+    'BITTREX'
+  ],
+  'LCUSD': [
+    'BITTREX'
+  ],
+  'RSETH': [
+    'BINANCE'
+  ],
+  'NOEUR': [
+    'KRAKEN'
+  ],
+  'RCBTC': [
+    'BITTREX'
+  ],
+  'BXUSDT': [
+    'HITBTC'
+  ],
+  'STUSDT': [
+    'HITBTC'
+  ],
+  'CBTC': [
+    'BINANCE',
+    'HUOBI'
+  ],
+  'OTBTC': [
+    'BINANCE',
+    'BITFINEX',
+    'HUOBI'
+  ],
+  'TBTC': [
+    'HUOBI',
+    'HITBTC'
+  ],
+  'TUSDT': [
+    'HUOBI',
+    'HITBTC'
+  ],
+  'OTUSDT': [
+    'BINANCE'
+  ],
+  'OTETH': [
+    'BINANCE',
+    'BITFINEX',
+    'HUOBI'
+  ],
+  'CUSD': [
+    'BINANCE'
+  ],
+  'OTUSD': [
+    'BINANCE',
+    'BITFINEX'
+  ],
+  'THUSD': [
+    'HUOBI'
+  ],
+  'TETH': [
+    'HUOBI'
+  ],
+  'PTUSDT': [
+    'HUOBI'
+  ],
+  'MQUSD': [
+    'BITTREX'
+  ],
+  'CUSDT': [
+    'HUOBI'
+  ],
+  'ITUSDT': [
+    'HUOBI'
+  ],
+  'MQBTC': [
+    'BITTREX',
+    'HITBTC'
+  ],
+  'UCUSD': [
+    'POLONIEX'
+  ],
+  'CETH': [
+    'BINANCE',
+    'HUOBI'
+  ],
+  'CKRW': [
+    'BITHUMB'
+  ],
+  'BZUSDT': [
+    'HITBTC'
+  ],
+  'DACKRW': [
+    'BITHUMB'
+  ],
+  'YDROBTC': [
+    'BITTREX'
+  ],
+  'XROBTC': [
+    'BITTREX'
+  ],
+  'STBTC': [
+    'BITTREX'
+  ],
+  'OTBNB': [
+    'BINANCE'
+  ],
+  'B10USDT': [
+    'HUOBI'
+  ],
+  'YDROUSD': [
+    'BITTREX'
+  ],
+  'UCBTC': [
+    'POLONIEX'
+  ],
+  'TMLUSDT': [
+    'HITBTC'
+  ],
+  'PTBTC': [
+    'HUOBI'
+  ],
+  'ANDUSDT': [
+    'HITBTC'
+  ],
+  'ITBTC': [
+    'HUOBI'
+  ],
+  'PTHT': [
+    'HUOBI'
+  ],
+  'ITETH': [
+    'HUOBI'
+  ],
+  'PCBTC': [
+    'HITBTC'
+  ],
+  'TMLBTC': [
+    'HITBTC'
+  ],
+  'VNBTC': [
+    'HITBTC'
+  ],
+  'BTETH': [
+    'HITBTC'
+  ],
+  'SRBTC': [
+    'HITBTC'
+  ],
+  'BZBTC': [
+    'HITBTC'
+  ],
+  'ANDETH': [
+    'HITBTC'
+  ],
+  'NTBTC': [
+    'BITTREX'
+  ],
+  'OTBTC': [
+    'HITBTC'
+  ],
+  'BCBTC': [
+    'HITBTC'
+  ],
+  'BCETH': [
+    'HITBTC'
+  ],
+  'NTETH': [
+    'HITBTC'
+  ],
+  'NCBTC': [
+    'BINANCE',
+    'BITFINEX',
+    'POLONIEX',
+    'HUOBI'
+  ],
+  'MDBTC': [
+    'BINANCE',
+    'BITTREX',
+    'HUOBI',
+    'HITBTC'
+  ],
+  'EYBTC': [
+    'BINANCE'
+  ],
+  'NCUSD': [
+    'BINANCE',
+    'BITFINEX'
+  ],
+  'MDUSD': [
+    'BITTREX',
+    'BINANCE'
+  ],
+  'OREUSD': [
+    'BITTREX'
+  ],
+  'EYUSD': [
+    'BINANCE'
+  ],
+  'NCETH': [
+    'BINANCE',
+    'BITFINEX',
+    'POLONIEX',
+    'HUOBI'
+  ],
+  'OREBTC': [
+    'BITTREX'
+  ],
+  'NCUSDT': [
+    'POLONIEX'
+  ],
+  'MDETH': [
+    'BINANCE',
+    'HUOBI',
+    'HITBTC'
+  ],
+  'MDUSDT': [
+    'HITBTC'
+  ],
+  'RMUSDT': [
+    'HITBTC'
+  ],
+  'BCBTC': [
+    'HITBTC'
+  ],
+  'EYETH': [
+    'BINANCE'
+  ],
+  'NCKRW': [
+    'BITHUMB'
+  ],
+  'INETH': [
+    'HITBTC'
+  ],
+  'INBTC': [
+    'HITBTC'
+  ],
+  'ANBTC': [
+    'HUOBI'
+  ],
+  'BCETH': [
+    'HITBTC'
+  ],
+  'ICKBTC': [
+    'HITBTC'
+  ],
+  'CASHBTC': [
+    'HUOBI'
+  ],
+  'INDBTC': [
+    'HITBTC'
+  ],
+  'CASHHT': [
+    'HUOBI'
+  ],
+  'ANETH': [
+    'HUOBI'
+  ],
+  'MDINR': [
+    'BITTREX'
+  ],
+  'MDTHB': [
+    'BITTREX'
+  ],
+  'MDIDR': [
+    'BITTREX'
+  ],
+  'MDTRY': [
+    'BITTREX'
+  ],
+  'MDMYR': [
+    'BITTREX'
+  ],
+  'INDETH': [
+    'HITBTC'
+  ],
+  'CASHETH': [
+    'HUOBI'
+  ],
+  'NCBTCLONGS': [
+    'BITFINEX'
+  ],
+  'NCUSDLONGS': [
+    'BITFINEX'
+  ],
+  'NCETHLONGS': [
+    'BITFINEX'
+  ],
+  'NCUSDSHORTS': [
+    'BITFINEX'
+  ],
+  'TCUSD': [
+    'COINBASE',
+    'BITFINEX',
+    'KRAKEN',
+    'BITSTAMP',
+    'BINANCE',
+    'BITTREX',
+    'GEMINI'
+  ],
+  'TCUSDT': [
+    'BINANCE',
+    'POLONIEX',
+    'BITTREX',
+    'HUOBI',
+    'HITBTC'
+  ],
+  'TCBTC': [
+    'BINANCE',
+    'BITFINEX',
+    'COINBASE',
+    'BITTREX',
+    'POLONIEX',
+    'BITSTAMP'
+  ],
+  'INKBTC': [
+    'BINANCE'
+  ],
+  'SKBTC': [
+    'BINANCE',
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'OOMBTC': [
+    'BINANCE'
+  ],
+  'RCBTC': [
+    'BINANCE'
+  ],
+  'TCEUR': [
+    'COINBASE',
+    'KRAKEN',
+    'BITSTAMP'
+  ],
+  'UNBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'ENDBTC': [
+    'BINANCE'
+  ],
+  'TCM19': [
+    'BITMEX'
+  ],
+  'TCBRL': [
+    'MERCADO'
+  ],
+  'SKUSD': [
+    'BITTREX',
+    'POLONIEX',
+    'BINANCE'
+  ],
+  'INKUSD': [
+    'BINANCE'
+  ],
+  'BCBTC': [
+    'BITTREX'
+  ],
+  'TCXBT': [
+    'KRAKEN'
+  ],
+  'TCETH': [
+    'BINANCE'
+  ],
+  'OOMUSD': [
+    'BINANCE'
+  ],
+  'TCGBP': [
+    'COINBASE'
+  ],
+  'TCMXN': [
+    'BITSO'
+  ],
+  'RCUSD': [
+    'BINANCE',
+    'BITFINEX'
+  ],
+  'BCUSD': [
+    'BITTREX'
+  ],
+  'UNUSD': [
+    'BITTREX'
+  ],
+  'YMUSD': [
+    'BITFINEX'
+  ],
+  'ETUSDT': [
+    'HUOBI'
+  ],
+  'ENDUSD': [
+    'BINANCE'
+  ],
+  'TCKRW': [
+    'KORBIT'
+  ],
+  'ILBTC': [
+    'BINANCE',
+    'BITFINEX',
+    'BITTREX'
+  ],
+  'RXBTC': [
+    'BINANCE',
+    'BITTREX',
+    'BITFINEX',
+    'POLONIEX',
+    'COINBASE',
+    'HUOBI'
+  ],
+  'ECBTC': [
+    'BINANCE',
+    'BITFINEX',
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'ECUSD': [
+    'BITFINEX',
+    'KRAKEN',
+    'BINANCE',
+    'GEMINI',
+    'POLONIEX',
+    'BITTREX'
+  ],
+  'CLBTC': [
+    'BITTREX'
+  ],
+  'RXUSD': [
+    'COINBASE',
+    'BITFINEX',
+    'BINANCE',
+    'POLONIEX'
+  ],
+  'ENBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'ILUSDT': [
+    'BINANCE',
+    'HUOBI'
+  ],
+  'ILKRW': [
+    'KORBIT',
+    'BITHUMB'
+  ],
+  'RXUSDT': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'ILUSD': [
+    'BINANCE',
+    'BITFINEX'
+  ],
+  'CLUSD': [
+    'BITTREX'
+  ],
+  'ILETH': [
+    'BINANCE'
+  ],
+  'RXEUR': [
+    'COINBASE'
+  ],
+  'ECEUR': [
+    'KRAKEN'
+  ],
+  'RXETH': [
+    'BINANCE'
+  ],
+  'ECUSDT': [
+    'BINANCE',
+    'POLONIEX',
+    'BITTREX',
+    'HUOBI'
+  ],
+  'ECUSDC': [
+    'COINBASE'
+  ],
+  'ECETH': [
+    'BINANCE'
+  ],
+  'ENUSD': [
+    'BITTREX'
+  ],
+  'ECXBT': [
+    'KRAKEN'
+  ],
+  'ENETH': [
+    'BINANCE'
+  ],
+  'ILBNB': [
+    'BINANCE'
+  ],
+  'BT': [
+    'BITMEX'
+  ],
+  'BTUSD': [
+    'BITMEX',
+    'KRAKEN'
+  ],
+  'RPUSD': [
+    'BITFINEX',
+    'KRAKEN',
+    'BITSTAMP',
+    'BINANCE',
+    'POLONIEX',
+    'COINBASE',
+    'BITTREX'
+  ],
+  'RPBTC': [
+    'BINANCE',
+    'BITFINEX',
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'RPUSDT': [
+    'BINANCE',
+    'POLONIEX',
+    'BITTREX'
+  ],
+  'LMBTC': [
+    'BINANCE',
+    'BITTREX',
+    'BITFINEX'
+  ],
+  'LMUSDT': [
+    'BINANCE'
+  ],
+  'VGBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'BTEUR': [
+    'KRAKEN'
+  ],
+  'MRBTC': [
+    'BINANCE',
+    'BITFINEX',
+    'BITTREX'
+  ],
+  'LMUSD': [
+    'BITFINEX',
+    'BINANCE',
+    'BITTREX',
+    'KRAKEN'
+  ],
+  'EMBTC': [
+    'BINANCE',
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'RPKRW': [
+    'KORBIT'
+  ],
+  'RPEUR': [
+    'KRAKEN',
+    'BITSTAMP'
+  ],
+  'MRUSD': [
+    'BITFINEX',
+    'KRAKEN'
+  ],
+  'RPM19': [
+    'BITMEX'
+  ],
+  'ZCBTC': [
+    'BINANCE'
+  ],
+  'LMEUR': [
+    'KRAKEN'
+  ],
+  'TZBTC': [
+    'BITFINEX'
+  ],
+  'TZUSD': [
+    'BITFINEX',
+    'KRAKEN'
+  ],
+  'HVBTC': [
+    'BITTREX'
+  ],
+  'BTM19': [
+    'BITMEX'
+  ],
+  'RPETH': [
+    'BINANCE'
+  ],
+  'EMUSD': [
+    'POLONIEX'
+  ],
+  'RPBRL': [
+    'MERCADO'
+  ],
+  'ELRBTC': [
+    'BINANCE'
+  ],
+  'MTBTC': [
+    'BINANCE'
+  ],
+  'NDBTC': [
+    'BINANCE',
+    'BITFINEX'
+  ],
+  'VCBTC': [
+    'BINANCE',
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'DTBTC': [
+    'BINANCE'
+  ],
+  'ROBTC': [
+    'BITTREX'
+  ],
+  'VCUSD': [
+    'BITTREX'
+  ],
+  'MTUSD': [
+    'BINANCE'
+  ],
+  'ANNBTC': [
+    'BITTREX'
+  ],
+  'LAMBTC': [
+    'POLONIEX'
+  ],
+  'NDUSD': [
+    'BINANCE',
+    'BITFINEX'
+  ],
+  'MTUSDT': [
+    'HUOBI'
+  ],
+  'NNUSD': [
+    'BITFINEX'
+  ],
+  'ANNUSD': [
+    'BITTREX'
+  ],
+  'ELRUSDT': [
+    'BINANCE'
+  ],
+  'LOUSD': [
+    'BITFINEX'
+  ],
+  'RWUSD': [
+    'BITTREX'
+  ],
+  'BTUSD': [
+    'BITFINEX'
+  ],
+  'VCUSDT': [
+    'HUOBI',
+    'HITBTC'
+  ],
+  'TXUSD': [
+    'BITFINEX'
+  ],
+  'UREUSD': [
+    'BITTREX'
+  ],
+  'BCUSD': [
+    'BITTREX'
+  ],
+  'SXUSD': [
+    'BITFINEX'
+  ],
+  'DTUSD': [
+    'BINANCE'
+  ],
+  'VCUSDC': [
+    'COINBASE'
+  ],
+  'LAMUSD': [
+    'POLONIEX'
+  ],
+  'MTETH': [
+    'BINANCE'
+  ],
+  'RWBTC': [
+    'BITTREX'
+  ],
+  'ELRBNB': [
+    'BINANCE'
+  ],
+  'MCTBTC': [
+    'BITTREX'
+  ],
+  'ROUSDT': [
+    'HITBTC'
+  ],
+  'HXUSDT': [
+    'HITBTC'
+  ],
+  'LOUSDT': [
+    'HITBTC'
+  ],
+  'NDUSDT': [
+    'HITBTC'
+  ],
+  'DTUSDT': [
+    'HITBTC'
+  ],
+  'VHUSDT': [
+    'HITBTC'
+  ],
+  'VTUSDT': [
+    'HITBTC'
+  ],
+  'SMUSDT': [
+    'HITBTC'
+  ],
+  'ASUSDT': [
+    'HITBTC'
+  ],
+  'ATUSDT': [
+    'HITBTC'
+  ],
+  'CLUSDT': [
+    'HITBTC'
+  ],
+  'UREBTC': [
+    'BITTREX'
+  ],
+  'BCBTC': [
+    'BITTREX'
+  ],
+  'NDETH': [
+    'BINANCE'
+  ],
+  'LOBTC': [
+    'BITFINEX'
+  ],
+  'ETBTC': [
+    'BINANCE',
+    'BITFINEX',
+    'HUOBI'
+  ],
+  'ETUSDT': [
+    'BINANCE',
+    'HUOBI'
+  ],
+  'IBEBTC': [
+    'BINANCE',
+    'HITBTC'
+  ],
+  'IABTC': [
+    'BINANCE',
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'IBBTC': [
+    'BINANCE',
+    'BITTREX',
+    'HITBTC'
+  ],
+  'TCBTC': [
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'ETUSD': [
+    'BITFINEX',
+    'BINANCE'
+  ],
+  'TCUSD': [
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'ETETH': [
+    'BINANCE',
+    'BITFINEX'
+  ],
+  'RCBTC': [
+    'BITTREX'
+  ],
+  'BKBTC': [
+    'BITTREX'
+  ],
+  'IAUSD': [
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'IBEUSD': [
+    'BINANCE'
+  ],
+  'RCUSD': [
+    'BITTREX'
+  ],
+  'RMUSD': [
+    'BITTREX'
+  ],
+  'EEUSD': [
+    'BITFINEX'
+  ],
+  'SYUSD': [
+    'BITFINEX'
+  ],
+  'LDUSD': [
+    'BITFINEX'
+  ],
+  'IBUSD': [
+    'BINANCE'
+  ],
+  'RMBTC': [
+    'BITTREX'
+  ],
+  'EEBTC': [
+    'BITTREX',
+    'BITFINEX'
+  ],
+  'IBEETH': [
+    'BINANCE'
+  ],
+  'IBETH': [
+    'BINANCE',
+    'BITTREX',
+    'HITBTC'
+  ],
+  'IAETH': [
+    'BINANCE'
+  ],
+  'ETBNB': [
+    'BINANCE'
+  ],
+  'ITEBTC': [
+    'BITTREX'
+  ],
+  'ETKRW': [
+    'BITHUMB'
+  ],
+  'IABNB': [
+    'BINANCE'
+  ],
+  'SYBTC': [
+    'BITFINEX'
+  ],
+  'RABTC': [
+    'HITBTC'
+  ],
+  'EOBTC': [
+    'HITBTC'
+  ],
+  'OCOETH': [
+    'HITBTC'
+  ],
+  'RAETH': [
+    'HITBTC'
+  ],
+  'LDETH': [
+    'BITFINEX'
+  ],
+  'TCUSD': [
+    'BITFINEX',
+    'COINBASE',
+    'BITSTAMP',
+    'BITTREX',
+    'GEMINI'
+  ],
+  'LX': [
+    'BNC'
+  ],
+  'TCUSDT': [
+    'BINANCE',
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'NBUSDT': [
+    'BINANCE'
+  ],
+  'NBBTC': [
+    'BINANCE'
+  ],
+  'TCJPY': [
+    'BITFLYER'
+  ],
+  'XBT': [
+    'BITMEX'
+  ],
+  'TTUSDT': [
+    'BINANCE'
+  ],
+  'TTBTC': [
+    'BINANCE'
+  ],
+  'CHUSD': [
+    'COINBASE',
+    'KRAKEN',
+    'BITSTAMP'
+  ],
+  'ATBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'TCKRW': [
+    'KORBIT',
+    'BITHUMB'
+  ],
+  'TCEUR': [
+    'COINBASE',
+    'BITSTAMP',
+    'BITFINEX'
+  ],
+  'TCBRL': [
+    'MERCADO'
+  ],
+  'NBUSD': [
+    'BINANCE'
+  ],
+  'QXBTC': [
+    'BINANCE'
+  ],
+  'ABUSD': [
+    'BITFINEX'
+  ],
+  'LZBTC': [
+    'BINANCE'
+  ],
+  'ETH': [
+    'BITMEX'
+  ],
+  'CPTBTC': [
+    'BINANCE'
+  ],
+  'CDBTC': [
+    'BINANCE'
+  ],
+  'SVUSD': [
+    'BITFINEX'
+  ],
+  'ATUSD': [
+    'BINANCE'
+  ],
+  'RDBTC': [
+    'BINANCE'
+  ],
+  'NTBTC': [
+    'BINANCE'
+  ],
+  'TSBTC': [
+    'BINANCE'
+  ],
+  'CHM19': [
+    'BITMEX'
+  ],
+  'CHKRW': [
+    'KORBIT'
+  ],
+  'TGBTC': [
+    'BINANCE'
+  ],
+  'ATUSDT': [
+    'BINANCE'
+  ],
+  'CHBTC': [
+    'BITTREX',
+    'COINBASE'
+  ],
+  'TGUSD': [
+    'BITFINEX'
+  ],
+  'ATUSDC': [
+    'COINBASE'
+  ],
+  'CHEUR': [
+    'KRAKEN'
+  ],
+  'TCTHB': [
+    'BXTH'
+  ],
+  'CHBRL': [
+    'MERCADO'
+  ],
+  'TCGBP': [
+    'COINBASE'
+  ],
+  'EOBTC': [
+    'BINANCE',
+    'BITTREX',
+    'BITFINEX'
+  ],
+  'ANOBTC': [
+    'BINANCE'
+  ],
+  'EOUSDT': [
+    'BINANCE',
+    'BITTREX',
+    'HUOBI'
+  ],
+  'EOUSD': [
+    'BITFINEX',
+    'BINANCE',
+    'BITTREX'
+  ],
+  'PXSBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'ULSBTC': [
+    'BINANCE'
+  ],
+  'EBLBTC': [
+    'BINANCE'
+  ],
+  'XSBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'ASBTC': [
+    'BINANCE'
+  ],
+  'AVBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'ANOUSD': [
+    'BINANCE'
+  ],
+  'PXSETH': [
+    'BINANCE'
+  ],
+  'PXSUSD': [
+    'BINANCE'
+  ],
+  'XTBTC': [
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'XSUSD': [
+    'BITTREX'
+  ],
+  'EOETH': [
+    'BINANCE'
+  ],
+  'ULSUSD': [
+    'BINANCE'
+  ],
+  'MRUSD': [
+    'BITTREX'
+  ],
+  'XTUSD': [
+    'BITTREX'
+  ],
+  'XTUSDT': [
+    'POLONIEX',
+    'BITTREX'
+  ],
+  'MRBTC': [
+    'BITTREX'
+  ],
+  'AVUSD': [
+    'BITTREX'
+  ],
+  'LGUSD': [
+    'BITTREX'
+  ],
+  'EBLUSD': [
+    'BINANCE'
+  ],
+  'ASUSD': [
+    'BINANCE'
+  ],
+  'GCUSD': [
+    'BITTREX'
+  ],
+  'ASUSDT': [
+    'HUOBI'
+  ],
+  'BTUSD': [
+    'BITTREX'
+  ],
+  'LC2USD': [
+    'BITTREX'
+  ],
+  'IOUSD': [
+    'BITFINEX'
+  ],
+  'EOSUSD': [
+    'BITTREX'
+  ],
+  'XCUSD': [
+    'BITTREX'
+  ],
+  'CAUSD': [
+    'BITFINEX'
+  ],
+  'CASHBTC': [
+    'BINANCE'
+  ],
+  'ANOETH': [
+    'BINANCE'
+  ],
+  'EOTUSD': [
+    'BINANCE'
+  ],
+  'ULSUSDT': [
+    'BINANCE'
+  ],
+  'GCBTC': [
+    'BITTREX'
+  ],
+  'MCUSD': [
+    'POLONIEX'
+  ],
+  'TLBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'FTBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'DABTC': [
+    'BINANCE'
+  ],
+  'ANABTC': [
+    'BINANCE',
+    'BITTREX',
+    'POLONIEX'
+  ],
+  'ITHBTC': [
+    'BINANCE'
+  ],
+  'THBTC': [
+    'BINANCE'
+  ],
+  'COBTC': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'ANAUSD': [
+    'BINANCE'
+  ],
+  'KRUSD': [
+    'BITFINEX'
+  ],
+  'COUSD': [
+    'BINANCE',
+    'BITTREX'
+  ],
+  'AIDBTC': [
+    'POLONIEX'
+  ],
+  'ONAUSD': [
+    'BITTREX'
+  ],
+  'GOUSD': [
+    'BITFINEX'
+  ],
+  'FTUSD': [
+    'BINANCE'
+  ],
+  'ONABTC': [
+    'BITTREX'
+  ],
+  'TLUSD': [
+    'BITTREX',
+    'BINANCE'
+  ],
+  'DAUSD': [
+    'BINANCE'
+  ],
+  'LNUSD': [
+    'BITTREX',
+    'BITFINEX'
+  ],
+  'NAUSD': [
+    'BITFINEX'
+  ],
+  'ANUSD': [
+    'BITFINEX'
+  ],
+  'TNUSD': [
+    'BITFINEX'
+  ],
+  'ETUSD': [
+    'BITTREX'
+  ],
+  'ERUSD': [
+    'BITTREX'
+  ],
+  'UEUSD': [
+    'BITTREX'
+  ],
+  'ITUSD': [
+    'BITFINEX'
+  ],
+  'OREUSD': [
+    'BITTREX'
+  ],
+  'EMEUSD': [
+    'BITTREX'
+  ],
+  'DSUSDT': [
+    'HUOBI'
+  ],
+  'THUSD': [
+    'BINANCE'
+  ],
+  'ETABTC': [
+    'BITTREX'
+  ],
+  'UEBTC': [
+    'BITTREX'
+  ],
+  'KRBTC': [
+    'BITFINEX'
+  ],
+  'AIDUSD': [
+    'POLONIEX'
+  ],
+  'FTETH': [
+    'BINANCE'
+  ],
+  'DAETH': [
+    'BINANCE'
+  ],
+  'ANAETH': [
+    'BINANCE'
+  ],
+  'LNBTC': [
+    'BITTREX'
+  ],
+  'LNXBT': [
+    'KRAKEN'
+  ],
+  'ANBTC': [
+    'HUOBI'
+  ],
+  'OCBTC': [
+    'BITTREX'
+  ],
+  'KRUSDT': [
+    'HITBTC'
+  ],
+  'EMEBTC': [
+    'BITTREX'
+  ]
+};
+
 const belowAboveOptions = [
           { key: 'above', text: 'Above', value: 'above' },
           { key: 'below', text: 'Below', value: 'below' }
@@ -850,15 +3903,23 @@ class InterestingEvents extends React.Component {
 
         var i = 0;
         this.props.interesting_events.forEach((event) => {
-            var s = event['data']['exchange'] + ':' + event['data']['market'];
+            var c1 = event['data']['market'].split('_')[0]
+            var c2 = event['data']['market'].split('_')[1]
+            var mrkt = ''
+            if ((c1 + c2) in tradingViewMarkets) {
+                mrkt = c1+c2
+            } else {
+                mrkt = c2+c1;
+            }
+            var s = event['data']['exchange'] + ':' + mrkt;
             var c = 'Not available';
             if (i > this.props.interesting_events.length-1-5) {
                 c = <TradingViewWidget
-                                symbol="BTC/COINBASE:BTCUSD"
+                                symbol={s}
                                 width="650"
                                 height="350"
                                 locale="en"
-                                interval={60}
+                                interval={1}
                                 hide_legend="true"
                                 save_image="false"
                                 toolbar_bg="#f1f3f6"
@@ -868,7 +3929,7 @@ class InterestingEvents extends React.Component {
 
             i += 1;
 
-           data.push({time: event['data']['event_time'], alert: event['data']['event_type'], market: event['data']['market'], exchange: event['data']['exchange'], message: event['data']['message'],
+           data.push({time: new Date().toLocaleString(), alert: event['data']['event_type'], market: event['data']['market'], exchange: event['data']['exchange'], message: event['data']['message'],
                       chart: c
                      });
         });
@@ -877,7 +3938,7 @@ class InterestingEvents extends React.Component {
         const columns = [{
                 Header: 'Time',
                 accessor: 'time', // String-based value accessors!
-                width:30
+                width:300
               }, {
                 Header: 'Alert',
                 accessor: 'alert',
@@ -885,7 +3946,7 @@ class InterestingEvents extends React.Component {
               }, {
                 Header: 'Market',
                 accessor: 'market',
-                width: 75
+                width: 125
               }, {
                 Header: 'Exchange',
                 accessor: 'exchange',

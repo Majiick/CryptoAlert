@@ -142,7 +142,7 @@ async def websocket_connection(websocket, path):
             else:
                 assert (False)
         else:
-            await asyncio.sleep(0.0)
+            await asyncio.sleep(0.01)
 
 
 if __name__ == '__main__':

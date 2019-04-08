@@ -175,6 +175,33 @@ class BittrexWebsockets(ContinuousDataAPI):
 
         json = self.process_message(msg[0])
 
+        for queryExchangeState in [json]:
+            for fill in queryExchangeState['f']:  # In fills
+                buy = None
+                if fill['OT'] == 'SELL':
+                    buy = False
+                elif fill['OT'] == 'BUY':
+                    buy = True
+
+                # Since Bittrex returns with a resolution of one MILLISECOND, we need to convert to nanosecond resolution to avoid overwrites in postgres.
+                # To prevent the overwrites we need to keep the second that bittrex return to us but write our own nanosecond time
+                # float('1e+6') is how many nanoseconds is in one millisecond since Bittrex returns seconds
+                frac, whole = math.modf(time.time_ns() / float('1e+6'))  # Convert time nanoseconds to seconds and get the fraction part
+                timestamp = int((fill['T'] + frac) * float('1e+6'))  # Take bittrex timestamp add the fraction of nanoseconds onto it and convert to nanoseconds.
+
+                trade = TradeInfo(Exchange('BITTREX'),
+                                  Pair(json['M'].replace('-', '_')),
+                                  buy,
+                                  float(fill['Q']),
+                                  float(fill['R']),
+                                  timestamp=timestamp)
+                # self.order_books[market_name].update_using_trade(buy, Decimal(fill['R']), Decimal(fill['Q']))
+                self.write_trade(trade)
+
+
+
+        return  #######################################################
+
         market_name = json['M'].replace('-', '_')
         if market_name not in self.mutexes:
             self.mutexes[market_name] = QLock()
@@ -337,10 +364,10 @@ class BittrexWebsockets(ContinuousDataAPI):
             #
             # if i > 5:
             #     break
-        time.sleep(3)
-        for pair in self.pairs:
-            logger.info(pair.pair)
-            hub.server.invoke('queryExchangeState', pair.pair.replace('_', '-'))
+        # time.sleep(3)
+        # for pair in self.pairs:
+        #     logger.info(pair.pair)
+        #     hub.server.invoke('queryExchangeState', pair.pair.replace('_', '-'))
 
 
         # Start the client

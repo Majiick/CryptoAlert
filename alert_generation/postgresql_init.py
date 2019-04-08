@@ -21,9 +21,15 @@ with engine.begin() as conn:
         conn.execute("insert into REGISTERED_USER (user_pk, user_name, password, email) values (DEFAULT, 'Ecoste', crypt('password', gen_salt('md5')), 'ecostequse@gmail.com')")
     except sqlalchemy.exc.IntegrityError:  # User already exists
         pass
+    try:
+        conn.execute("insert into REGISTERED_USER (user_pk, user_name, password, email) values (DEFAULT, 'admin', crypt('password', gen_salt('md5')), 'mail@mail.com')")
+    except sqlalchemy.exc.IntegrityError:  # User already exists
+        pass
     ############################################################################################################################
 
-    result = conn.execute("select user_pk from REGISTERED_USER")
+
+with engine.begin() as conn:
+    result = conn.execute(text("select user_pk from REGISTERED_USER WHERE user_name='admin'"))
     for row in result:
         user_pk = row['user_pk']
 
@@ -33,10 +39,10 @@ with engine.begin() as conn:
     # s = text("insert into VOLUME_POINT_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point) values (DEFAULT, :user_pk, FALSE, FALSE, '*', '*', 1)")
     # conn.execute(s, user_pk=user_pk)
 
-    s = text("insert into PRICE_PERCENTAGE_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, time_frame, broadcast_interesting_event_on_trigger, alert_type) values (DEFAULT, :user_pk, FALSE, TRUE, '*', '*', 0.01, 'up', 60, TRUE, 'pricepercentage')")
-    conn.execute(s, user_pk=user_pk)
-    s = text("insert into PRICE_PERCENTAGE_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, time_frame, broadcast_interesting_event_on_trigger, alert_type) values (DEFAULT, :user_pk, FALSE, TRUE, '*', '*', 0.01, 'down', 60, TRUE, 'pricepercentage')")
-    conn.execute(s, user_pk=user_pk)
+    # s = text("insert into PRICE_PERCENTAGE_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, time_frame, broadcast_interesting_event_on_trigger, alert_type) values (DEFAULT, :user_pk, FALSE, TRUE, '*', '*', 0.01, 'up', 60, TRUE, 'pricepercentage')")
+    # conn.execute(s, user_pk=user_pk)
+    # s = text("insert into PRICE_PERCENTAGE_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, time_frame, broadcast_interesting_event_on_trigger, alert_type) values (DEFAULT, :user_pk, FALSE, TRUE, '*', '*', 0.01, 'down', 60, TRUE, 'pricepercentage')")
+    # conn.execute(s, user_pk=user_pk)
     s = text("insert into PRICE_PERCENTAGE_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, time_frame, broadcast_interesting_event_on_trigger, alert_type) values (DEFAULT, :user_pk, FALSE, TRUE, '*', '*', 1, 'down', 300, TRUE, 'pricepercentage')")
     conn.execute(s, user_pk=user_pk)
     s = text("insert into PRICE_PERCENTAGE_ALERT (alert_pk, created_by_user, fulfilled, repeat, exchange, pair, point, direction, time_frame, broadcast_interesting_event_on_trigger, alert_type) values (DEFAULT, :user_pk, FALSE, TRUE, '*', '*', 1, 'up', 300, TRUE, 'pricepercentage')")
