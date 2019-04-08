@@ -49,3 +49,15 @@ with engine.begin() as conn:
 
     s = text("insert into INTERESTING_EVENT (event_time, exchange, market, message, event_type) values (-5, 'testing xchange', 'test_test', 'test msg', 'test event')")
     conn.execute(s)
+
+
+    """CREATE TABLE IF NOT EXISTS INTERRUPTION(
+      id SERIAL PRIMARY KEY,
+      start_time BIGINT NOT NULL,
+      end_time BIGINT NOT NULL,
+      exchange TEXT NOT NULL,
+      fulfilled BOOLEAN NOT NULL,
+      times_tried INTEGER
+    );"""
+    s = text("insert into INTERRUPTION (id, start_time, end_time, exchange, fulfilled, times_tried) VALUES (DEFAULT, 1554684573, 1554684773, 'BITTREX', FALSE, 0)")
+    conn.execute(s)

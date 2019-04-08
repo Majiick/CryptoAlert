@@ -850,6 +850,7 @@ class InterestingEvents extends React.Component {
 
         var i = 0;
         this.props.interesting_events.forEach((event) => {
+            var s = event['data']['exchange'] + ':' + event['data']['market'];
             var c = 'Not available';
             if (i > this.props.interesting_events.length-1-5) {
                 c = <TradingViewWidget

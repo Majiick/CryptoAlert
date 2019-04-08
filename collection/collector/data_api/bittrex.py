@@ -192,6 +192,16 @@ class BittrexWebsockets(ContinuousDataAPI):
             logger.debug('Lock released for market {}'.format(market_name))
             return
 
+        if market_name in self.market_queryExchangeState_nonce and market_name not in self.market_nonce_numbers:
+            # If there was a queryExchangeState received and this is the first trade then check that this trade + cached trades line up with the queryExchangeState
+            # This assert is in place to check if the queryExchangeState was received first before any trades which may cause trades to be missing.
+            # For example if queryExchangeState nonce is 9002 but the first trade received nonce is 9005 then there are 3 trades missing, this should not happen.
+            if market_name in self.cached_received_exchange_deltas:
+                assert(int(self.cached_received_exchange_deltas[market_name][-1]['N']) == int(json['N'])-1)  # Check that the last nonce received is lined up with this trade
+                assert(self.market_queryExchangeState_nonce[market_name]+1 >= int(self.cached_received_exchange_deltas[market_name][0]['N'])) # See that the first received trade is the next nonce from queryExchangeState or lower.+1 To account for when nonce of trade is one bigger than snapshot.
+            else:
+                assert(self.market_queryExchangeState_nonce[market_name]+1 >= int(json['N']))  # +1 To account for when nonce of trade is one bigger than snapshot.
+
         deltas_to_execute = []
         if market_name in self.cached_received_exchange_deltas:
             if (market_name in self.market_nonce_numbers):
@@ -210,13 +220,18 @@ class BittrexWebsockets(ContinuousDataAPI):
 
                     deltas_to_execute.append(cached_delta)
                     last_cached_delta_nonce = int(cached_delta['N'])
-                    print("Adding one delta to execute with nonce: {} for {}. Snapshot nonce: {}".format(int(cached_delta['N']), market_name, self.market_queryExchangeState_nonce[market_name]))
+                    logger.debug("Adding one delta to execute with nonce: {} for {}. Snapshot nonce: {}".format(int(cached_delta['N']), market_name, self.market_queryExchangeState_nonce[market_name]))
 
             del self.cached_received_exchange_deltas[market_name]
 
         if market_name in self.market_nonce_numbers:
             assert(not deltas_to_execute)
-            assert(self.market_nonce_numbers[market_name] == int(json['N']) - 1)  # Make sure that update nonce lines up with last update.
+            if not self.market_nonce_numbers[market_name] == int(json['N']) - 1:
+                logger.debug(market_name)
+                logger.debug(self.market_nonce_numbers[market_name])
+                logger.debug(json['N'])
+                assert(self.market_nonce_numbers[market_name] == int(json['N']) - 1)  # Make sure that update nonce lines up with last update.
+            assert (self.market_nonce_numbers[market_name] == int(json['N']) - 1)  # Make sure that update nonce lines up with last update.
         else:
             # First trade after receiving queryExchange
             if deltas_to_execute:
@@ -309,12 +324,15 @@ class BittrexWebsockets(ContinuousDataAPI):
         for pair in self.pairs:
             logger.info(pair.pair)
             hub.server.invoke('SubscribeToExchangeDeltas', pair.pair.replace('_', '-'))
-            hub.server.invoke('queryExchangeState', pair.pair.replace('_', '-'))
             i += 1
             # break
             #
             # if i > 5:
             #     break
+        time.sleep(3)
+        for pair in self.pairs:
+            logger.info(pair.pair)
+            hub.server.invoke('queryExchangeState', pair.pair.replace('_', '-'))
 
 
         # Start the client

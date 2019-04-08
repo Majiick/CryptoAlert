@@ -28,6 +28,10 @@ class Pair:
             assert(pair.isupper())
         self.pair = pair
 
+    def flipped(self):
+        a, b = self.pair.split('_')
+        return Pair('{}_{}'.format(b, a))
+
 
 class Exchange:
     def __init__(self, name: str):
@@ -77,6 +81,7 @@ class TradeInfo:
 
 class OrderBook:
     def __init__(self, exchange: Exchange, pair: Pair):
+        return
         self.exchange = exchange
         self.pair = pair
         self.sell_orders: Dict[Decimal, Decimal] = collections.OrderedDict()  # Sell and buy orders are a dict: price -> volume
@@ -85,6 +90,7 @@ class OrderBook:
         self.time_last_written = 0  # Used for setting order_book.KEEP
 
     def set_initial_orders(self, sell_orders, buy_orders):
+        return
         # assert(len(sell_orders) > 0)
         # assert(len(buy_orders) > 0)
         # logger.debug("{} {}: {}".format(self.pair.pair, self.exchange.name, sell_orders))
@@ -94,6 +100,7 @@ class OrderBook:
         self.initial_orders_set = True
 
     def set_order(self, buy: bool, price: Decimal, new_size: Decimal):
+        return
         assert(self.initial_orders_set)
         assert(price > 0)
         assert(new_size > 0)
@@ -107,6 +114,7 @@ class OrderBook:
             self.sell_orders[price] = new_size
 
     def add_order(self, buy: bool, price: Decimal, size: Decimal):
+        return
         assert(self.initial_orders_set)
         assert(price > 0)
         assert(size > 0)
@@ -123,6 +131,7 @@ class OrderBook:
             # logger.debug(self.pair.pair + "Adding sell order at price " + str(price))
 
     def remove_order(self, buy: bool, price: Decimal):
+        return
         """
         Removes order at price. Removes fully.
         """
@@ -140,6 +149,7 @@ class OrderBook:
                 assert('Price not in sell orders')
 
     def update_using_trade(self, buy: bool, price: Decimal, size: Decimal):
+        return
         assert(self.initial_orders_set)
         if self.exchange.name == 'BITTREX' or self.exchange.name == 'POLONIEX':
             # logger.debug('Skipping update using trade because {} exchange.'.format(self.exchange.name))
@@ -196,6 +206,7 @@ class OrderBook:
         return json_dict
 
     def save_order_book(self):
+        return
         """
         Saves order book to Postgres.
         Needs to be called by the workers.

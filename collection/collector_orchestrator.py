@@ -4,8 +4,14 @@ import threading
 from data_source import continuous_data_apis
 from mlogging import logger
 from typing import List, Type, Dict
-from data_api import Exchange
+from data_api import Exchange, Pair
 import time
+from postgres_init import engine
+import cryptowatch
+import poloniex
+import bittrex
+from sqlalchemy.sql import text
+from multiprocessing import Pool
 
 COLLECT_HISTORICAL_DATA_AFTER = int(time.time())
 
@@ -20,9 +26,9 @@ def startup_queue():
     zmq_collector_starter_command_channel.bind("tcp://0.0.0.0:5556")
 
     ######################################################### TEMPORARY
-    zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': 'POLONIEX'})
-    # for exchange_name, _ in continuous_data_apis.items():
-    #     zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': exchange_name})
+    # zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': 'POLONIEX'})
+    for exchange_name, _ in continuous_data_apis.items():
+        zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': exchange_name})
 
 
 def restart_worker(exchange_name: str):
@@ -40,23 +46,17 @@ def record_continuous_worker_interruption(exchange: str, start_time: int, end_ti
     assert(end_time > int(time.time() - 86400))  # Check if not more than one day old
     assert(type(start_time) is int)
     assert(type(end_time) is int)
-    write = [{
-        "measurement": "continuous_interruption",
-        "time": int(time.time_ns()),
-        "tags": {
-            "exchange": exchange,
-            "fulfilled": False
-        },
-        "fields": {
-            "pairs": "*",
-            "start_time": start_time-1,  # Allow for 1 second of safety
-            "end_time": end_time+1  # Allow for 1 second of safety
-        }
-    }]
 
-    logger.error('Recording continuous worker interruption: ' + str(write))
-    # TODO WRITE TO POSTGRES
-    # db_client.write_points(write, time_precision='n')
+
+    # with engine.begin() as conn:
+    #     conn.execute(text(
+    #         "INSERT INTO INTERRUPTION (id, start_time, end_time, exchange, fulfilled) VALUES (DEFAULT, :start_time, :end_time, :exchange, :fulfilled)"),
+    #                  start_time=start_time-120,
+    #                  end_time=end_time+120,
+    #                  exchange=exchange,
+    #                  fulfilled=False)
+    #
+    # logger.error('Recording continuous worker interruption: {}:{} {}'.format(start_time, end_time, exchange))
 
 
 def message_rate_calculation():
@@ -124,19 +124,88 @@ def message_rate_calculation():
 
             for exchange, messages in rates.items():
                 if messages == 0:
-                    pass
-                    # logger.error('Exchange {} had 0 messages in past 60 seconds. Sending restart command and recording interruption.'.format(exchange))
-                    # restart_worker(exchange)
-                    # record_continuous_worker_interruption(exchange, int(time.time())-60, int(time.time()))  ## TEMPORARY
+                    logger.error('Exchange {} had 0 messages in past 60 seconds. Sending restart command and recording interruption.'.format(exchange))
+                    restart_worker(exchange)
+                    record_continuous_worker_interruption(exchange, int(time.time())-60, int(time.time()))  ## TEMPORARY
 
 
 
             last_time_reported = int(time.time())
 
 
+def collect_missing_historical_data_one_pair(pair: Pair, exchange: Exchange, start_time: int, end_time: int):
+    with engine.begin() as conn:
+        ohlc = cryptowatch.Cryptowatch.get_ohlc(pair, exchange, start_time, end_time, [60])
+        ohlc = ohlc[60]
+        # logger.debug(ohlc)
+        if not ohlc:
+            ohlc = cryptowatch.Cryptowatch.get_ohlc(pair.flipped(), exchange, start_time, end_time, [60])  # Flip the pair name e.g. BTCUSD to USDBTC and try again
+            ohlc = ohlc[60]
+            # logger.debug(ohlc)
+        if ohlc:
+            # for stick in ohlc:
+            #     # Stick: [ CloseTime, OpenPrice, HighPrice, LowPrice, ClosePrice, Volume ]
+            #     conn.execute(text("INSERT INTO OHLC (id, close_time, open_price, high_price, low_price, close_price, volume, exchange, market, time_interval) VALUES (DEFAULT, :close_time, :open_price, :high_price, :low_price, :close_price, :volume, :exchange, :market, :time_interval)"),
+            #                  close_time=stick[0],
+            #                  open_price=stick[1],
+            #                  high_price=stick[2],
+            #                  low_price=stick[3],
+            #                  close_price=stick[4],
+            #                  volume=stick[5],
+            #                  exchange=exchange.name,
+            #                  market=pair.pair,
+            #                  time_interval=60)
+            # return ohlc
+            pass
+        else:
+            logger.debug('Failed to get ohlc for {} on exchange {}. start_time: {} end_time: {}'.format(pair.pair, exchange.name, start_time, end_time))
+            return ohlc
+
+        logger.debug('Collected interruption data for {} on exchange {}. start_time: {} end_time: {}'.format(pair.pair, exchange.name, start_time, end_time))
+        return ohlc
+
+
 def collect_missing_historical_data():
+    '''
+    CREATE TABLE IF NOT EXISTS INTERRUPTION(
+        id SERIAL PRIMARY KEY,
+        start_time BIGINT NOT NULL,
+        end_time BIGINT NOT NULL,
+        exchange TEXT NOT NULL,
+        fulfilled BOOLEAN NOT NULL,
+        times_tried INTEGER
+    );
+    '''
     logger.info('Starting collect_missing_historical_data')
     # Check for any missing data using the continuous worker interrupted service measure
+    return  # XXX
+    while True:
+        logger.debug('Running collect_missing_historical_data loop.')
+        with engine.begin() as conn:
+            result = conn.execute(text("SELECT * FROM INTERRUPTION WHERE FULFILLED=FALSE"))
+
+        for interruption in result:
+            if interruption['exchange'] == 'BITTREX':
+                pairs = bittrex.BittrexWebsockets.get_all_pairs()
+            elif interruption['exchange'] == 'POLONIEX':
+                pairs = poloniex.PoloniexWebsocket.get_all_pairs()
+            else:
+                assert(False)
+
+            pool = Pool(150)
+            args = [[p, Exchange(interruption['exchange']), int(interruption['start_time']), int(interruption['end_time'])] for p in pairs]
+            logger.debug(len(pairs))
+            results = pool.starmap(collect_missing_historical_data_one_pair, args)
+            # logger.debug(results)
+            logger.debug('here')
+            with engine.begin() as conn:
+                conn.execute(text("UPDATE INTERRUPTION set fulfilled=TRUE WHERE id=:id"), id=interruption['id'])
+
+            pool.close()
+            pool.join()
+            time.sleep(1)
+
+        time.sleep(1)
 
 
 def listen_for_reported_interruptions():
@@ -157,6 +226,57 @@ def listen_for_reported_interruptions():
         record_continuous_worker_interruption(msg['exchange'], msg['start_time'], msg['end_time'])
 
 
+def generate_ohlc():
+    """
+    CREATE TABLE IF NOT EXISTS TRADE(
+      trade_time BIGINT NOT NULL,
+      exchange TEXT NOT NULL,
+      market TEXT NOT NULL,
+      buy BOOL NOT NULL,
+      price float(53) NOT NULL,
+      size float(53) NOT NULL,
+
+      PRIMARY KEY(trade_time, exchange, market, buy)
+    );
+    :return:
+    """
+    last_converted_time = time.time_ns() - 10*float('1e+9')
+
+    '''
+    Fiinsh this up. Needs to sort by market and exchange.
+    '''
+
+    while True:
+        with engine.begin() as conn:
+            result = conn.execute(text("SELECT * FROM TRADE WHERE trade_time > :last_converted_time SORT BY trade_time ASC"), last_converted_time=last_converted_time)
+
+        second_frame_trades = {}
+        for trade in result:
+            second_time = trade['trade_time'] / float('1e+9')
+            if second_time not in second_frame_trades:
+                second_frame_trades[second_time] = []
+            second_frame_trades[second_time].append(trade)
+
+        minute_frame_trades = {}
+        for second, trades in second_frame_trades.items():
+            if int(second/60) not in minute_frame_trades:
+                minute_frame_trades[int(second/60)] = []
+            minute_frame_trades[int(second / 60)].extend(trades)
+
+        for minute, trades in minute_frame_trades.items():
+            high = float('-inf')
+            low = float('+inf')
+
+            for trade in trades:
+                if trade['price'] > high:
+                    high = trade['price']
+
+                if trade['price'] < low:
+                    low = trade['price']
+
+
+
+
 def main():
     message_rate_calculation_thread = threading.Thread(target=message_rate_calculation)
     message_rate_calculation_thread.start()
@@ -170,6 +290,9 @@ def main():
     startup_queue_thread = threading.Thread(target=startup_queue)
     startup_queue_thread.start()
 
+    generate_ohlc_thread = threading.Thread(target=generate_ohlc)
+    generate_ohlc_thread.start()
+
     context = zmq.Context()
     zmq_socket = context.socket(zmq.PUSH)
     zmq_socket.bind("tcp://0.0.0.0:5557")
@@ -182,6 +305,7 @@ def main():
     message_rate_calculation_thread.join()
     collect_missing_historical_data_thread.join()
     listen_for_reported_interruptions_thread.join()
+    generate_ohlc_thread.join()
 
 
 if __name__ == "__main__":

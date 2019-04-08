@@ -36,7 +36,7 @@ def main():
 
         if command['command'] == 'restart_continuous':
             assert(command['target'] in continuous_data_apis)
-            assert(command['target'] in started_continuous_collectors)
+            # assert(command['target'] in started_continuous_collectors)
             logger.debug('Collector starter received restart_continuous for {}. Recreating.'.format(command['target']))
 
             process = started_continuous_collectors[command['target']]

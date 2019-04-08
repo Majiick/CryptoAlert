@@ -112,7 +112,7 @@ async def collect_queue():
             recv_json = queue.get_nowait()
             local_storage.append(recv_json)
         except multiprocessing.queues.Empty:
-            await asyncio.sleep(0.0)
+            await asyncio.sleep(0.01)
 
 async def websocket_connection(websocket, path):
     logger.debug('New websocket connection.')
