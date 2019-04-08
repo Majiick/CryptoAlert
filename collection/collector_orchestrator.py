@@ -27,8 +27,8 @@ def startup_queue():
 
     ######################################################### TEMPORARY
     # zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': 'POLONIEX'})
-    for exchange_name, _ in continuous_data_apis.items():
-        zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': exchange_name})
+    # for exchange_name, _ in continuous_data_apis.items():
+    #     zmq_collector_starter_command_channel.send_json({'command': 'start_continuous', 'target': exchange_name})
 
 
 def restart_worker(exchange_name: str):
@@ -159,10 +159,10 @@ def collect_missing_historical_data_one_pair(pair: Pair, exchange: Exchange, sta
             pass
         else:
             logger.debug('Failed to get ohlc for {} on exchange {}. start_time: {} end_time: {}'.format(pair.pair, exchange.name, start_time, end_time))
-            return ohlc
+            return (pair.pair, ohlc)
 
         logger.debug('Collected interruption data for {} on exchange {}. start_time: {} end_time: {}'.format(pair.pair, exchange.name, start_time, end_time))
-        return ohlc
+        return (pair.pair, ohlc)
 
 
 def collect_missing_historical_data():
@@ -178,7 +178,6 @@ def collect_missing_historical_data():
     '''
     logger.info('Starting collect_missing_historical_data')
     # Check for any missing data using the continuous worker interrupted service measure
-    return  # XXX
     while True:
         logger.debug('Running collect_missing_historical_data loop.')
         with engine.begin() as conn:
@@ -197,7 +196,24 @@ def collect_missing_historical_data():
             logger.debug(len(pairs))
             results = pool.starmap(collect_missing_historical_data_one_pair, args)
             # logger.debug(results)
-            logger.debug('here')
+            # Results are [ (pair_name, [array of sticks]), ... ]
+            with engine.begin() as conn:
+                time_started = time.time()
+                for result in results:
+                    # result is just a (pair_name, [[ CloseTime, OpenPrice, HighPrice, LowPrice, ClosePrice, Volume ], ...])
+                    pair_name = result[0]
+                    for stick in result[1]:
+                        conn.execute(text("INSERT INTO OHLC (id, close_time, open_price, high_price, low_price, close_price, volume, exchange, market, time_interval) VALUES (DEFAULT, :close_time, :open_price, :high_price, :low_price, :close_price, :volume, :exchange, :market, :time_interval)"),
+                                     close_time=stick[0],
+                                     open_price=stick[1],
+                                     high_price=stick[2],
+                                     low_price=stick[3],
+                                     close_price=stick[4],
+                                     volume=stick[5],
+                                     exchange=interruption['exchange'],
+                                     market=pair_name,
+                                     time_interval=60)
+            logger.debug("Took {} secs to write ohlc.".format(time.time() - time_started))
             with engine.begin() as conn:
                 conn.execute(text("UPDATE INTERRUPTION set fulfilled=TRUE WHERE id=:id"), id=interruption['id'])
 
@@ -245,7 +261,7 @@ def generate_ohlc():
     '''
     Fiinsh this up. Needs to sort by market and exchange.
     '''
-
+    return
     while True:
         with engine.begin() as conn:
             result = conn.execute(text("SELECT * FROM TRADE WHERE trade_time > :last_converted_time SORT BY trade_time ASC"), last_converted_time=last_converted_time)

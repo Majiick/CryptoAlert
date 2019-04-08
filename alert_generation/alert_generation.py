@@ -79,7 +79,7 @@ workers_socket.setsockopt_string(zmq.SUBSCRIBE, '')
 pub_socketio_channel = context.socket(zmq.PUB)
 pub_socketio_channel.bind('tcp://0.0.0.0:28000')
 
-while False:
+while True:
     alerts: List[Alert] = []
     alerts.extend(PricePoint.get_all_from_db())
     alerts.extend(VolumePoint.get_all_from_db())
